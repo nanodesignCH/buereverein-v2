@@ -166,8 +166,18 @@ Die Wechselmechanik der Textkarte gilt **nicht** mehr.
   rechten Rand immer angeschnitten sichtbar. Das Angeschnittene ist der Punkt
   der Variante, nicht ein Nebeneffekt.
 - Jede Kachel trägt: `caption` mit der Position im Band, Titel in `display-l`,
-  Vorschautext unten. Der Text steht fest in seiner Kachel und bewegt sich
-  nicht relativ zu ihr.
+  Vorschautext unten, darunter die Aufforderung. Der Text steht fest in seiner
+  Kachel und bewegt sich nicht relativ zu ihr.
+- **Aufforderung, entschieden am 09.08.2026: „Mehr erfahren" als rein
+  typografischer Link, kein Button.** `caption`-Grösse, unterstrichen, mit
+  einem einfarbigen Inline-Pfeil, unten unter dem Vorschautext.
+  Sie erbt die Textfarbe der Kachel und liegt damit immer auf einer geprüften
+  Paarung. Hover ist reines CSS über 150ms und ändert die Unterstreichung von
+  1px auf 2px, also die Variante Umrissstärke aus DESIGN.md 5. Ein Farbwechsel
+  scheidet aus, der Text steht bereits auf vollem Kontrast.
+- **Die ganze Kachel ist der Link, die Aufforderung ist ein `span` darin.**
+  Damit gibt es ein Fokusziel pro Kachel und kein interaktives Element
+  innerhalb eines anderen.
 - Steuerung unten links, Fortschrittslinie darunter über die volle Breite mit
   8 Punkten, aktiver Punkt als Ring.
 

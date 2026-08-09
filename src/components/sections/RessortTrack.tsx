@@ -21,6 +21,30 @@ const tones = [
   { surface: 'bg-[var(--color-mauve)]', text: 'text-[var(--color-ink)]', dark: false },
 ] as const
 
+/* The call to action, chosen on 09.08.2026: a typographic link, no button.
+   It inherits the card's text colour, so it is exactly the pairing that was
+   already measured per tone and can never land on an unchecked combination.
+
+   The card itself stays the link. This is a span inside it, so there is one
+   focus target per card and no interactive element nested in another. The
+   hover rides on group-hover, is pure CSS and runs 150ms. Underline thickness
+   carries it, which is the "Umrissstärke" option in DESIGN.md 5, because a
+   colour change is not available: the text already sits at full contrast. */
+
+const CTA_LABEL = 'Mehr erfahren'
+
+const ctaLink =
+  'mt-6 inline-flex items-center gap-2 caption underline decoration-1 underline-offset-[6px] ' +
+  '[transition:text-decoration-thickness_150ms] group-hover:decoration-2'
+
+function Arrow({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={`fill-none stroke-current stroke-[1.5] ${className}`}>
+      <path d="M5 12h13M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 export function RessortTrack({ ressorts }: { ressorts: Ressort[] }) {
   const root = useRef<HTMLElement>(null)
   const viewport = useRef<HTMLDivElement>(null)
@@ -108,13 +132,19 @@ export function RessortTrack({ ressorts }: { ressorts: Ressort[] }) {
                 >
                   <Link
                     href={`/ressorts/${ressort.slug}`}
-                    className={`grid h-full grid-rows-[auto_1fr_auto] gap-5 rounded-[var(--radius-surface)] p-[var(--gutter)] no-underline ${tone.surface} ${tone.text} ${tone.dark ? 'on-dark' : ''}`}
+                    className={`group grid h-full grid-rows-[auto_1fr_auto] gap-5 rounded-[var(--radius-surface)] p-[var(--gutter)] no-underline ${tone.surface} ${tone.text} ${tone.dark ? 'on-dark' : ''}`}
                   >
                     <span className="caption">
                       Ressort {index + 1} von {count}
                     </span>
                     <h3 className="display-l max-w-[11ch] self-start">{ressort.titel}</h3>
-                    <p className="max-w-[40ch] self-end">{ressort.teaser}</p>
+                    <div className="self-end">
+                      <p className="max-w-[40ch]">{ressort.teaser}</p>
+                      <span className={ctaLink}>
+                        {CTA_LABEL}
+                        <Arrow className="size-3.5" />
+                      </span>
+                    </div>
                   </Link>
                 </li>
               )
