@@ -41,6 +41,16 @@
     /* Measured against the hero video, see REFERENCE.md 4.1. Not a guess. */
     --scrim: 0.39;
     --track-card: clamp(280px, 62vw, 720px);
+
+    /* Crop anchor for the hero video. The source is 4:3 and the hero surface is
+       far wider than tall, so object-fit: cover always drops height. Centred,
+       the top loses 12 to 18 percent depending on window, which is exactly
+       where the church tower stands: measured, the topmost non sky pixel sits
+       at 3.0 to 5.1 percent of the frame, the continuous roofline at 22 to 28.
+       At 6 percent the top loses under 2.5 percent across 1280 to 1920 wide
+       windows, so the tower always survives and a little sky stays above it.
+       The remaining overflow comes off the bottom, which is water. */
+    --hero-focus: 50% 6%;
   }
 
   @media (max-width: 640px) {
@@ -140,6 +150,17 @@
     margin-inline: var(--inset);
     border-radius: var(--radius-surface);
     overflow: hidden;
+  }
+
+  /* Poster and video share one crop anchor. If they drifted apart, the picture
+     would jump the moment the video takes over from the poster. */
+  .hero-media {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: var(--hero-focus);
   }
 
   /* Masked line reveal. The clip box is opened upwards by the amount the

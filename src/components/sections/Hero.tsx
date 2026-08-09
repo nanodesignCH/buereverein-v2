@@ -87,7 +87,7 @@ export function Hero() {
           aria-hidden="true"
           width={1664}
           height={1248}
-          className="absolute inset-0 size-full object-cover"
+          className="hero-media"
         />
         <video
           ref={video}
@@ -97,7 +97,7 @@ export function Hero() {
           preload="auto"
           poster="/images/hero-poster.jpg"
           aria-hidden="true"
-          className="absolute inset-0 size-full object-cover"
+          className="hero-media"
         />
         {/* Flat scrim, no gradient. 0.39 is measured, see REFERENCE.md 4.1. */}
         <div

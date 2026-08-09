@@ -36,6 +36,11 @@ Abschnitt 4 definiert und gilt dort, nicht im Screenshot.
   kleinen Fliesstext-Grösse, keine Zwischenstufen als Füllmaterial.
 - **Farbe als Fläche, nie als Detail.** Ganze Sektionen und Kacheln in einem
   Farbton. Keine farbigen Icons, keine farbigen Linien, keine Farbverläufe.
+  **Eine Ausnahme, entschieden am 09.08.2026: das Vereinslogo.**
+  `logo_buereverein.png` ist eine mehrfarbige Strichzeichnung und steht seit
+  diesem Entscheid links in der Kopfzeile, an Stelle der typografischen
+  Wortmarke. Es ist das einzige farbige Grafikelement der Seite. Die Regel gilt
+  weiterhin für alles andere, insbesondere für Icons, Linien und Rahmen.
 - **Bildlose Textkarte als Sektionstyp.** Grosse Headline oben links,
   Fliesstext im rechten Drittel, Steuerung unten links, Fortschrittslinie am
   unteren Rand.
@@ -265,7 +270,8 @@ Am fertigen Ergebnis prüfbar. Jedes "nein" ist ein Fehler, kein Geschmack.
 3. Der Typo-Sprung zwischen Display und Fliesstext ist gross genug, dass man
    ihn ohne Vergleich erkennt.
 4. Farbe erscheint als Fläche. Es gibt keine farbigen Icons, Linien oder
-   Verläufe.
+   Verläufe. **Ausgenommen ist allein das Vereinslogo in der Kopfzeile**,
+   siehe Abschnitt 2.
 5. Keine Sektion ist Bild links, Text rechts.
 6. **Keine Maske schneidet ein Wort.** Masken-Reveals laufen zeilen- oder
    wortweise, nie buchstabenweise, und eine Zeile wird nie mitten im Wort

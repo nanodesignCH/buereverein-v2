@@ -256,10 +256,23 @@ Mechanik:
 
 **Platzierung nach `reference/hero_and_topnav.png`:**
 
-- Navigation oben, ausserhalb der Fläche, auf `paper`. Wortmarke links,
-  Links mittig, eine hervorgehobene Aktion rechts als Pill in `ink`.
+- Navigation oben, ausserhalb der Fläche, auf `paper`. **Vereinslogo links**
+  (`/images/logo_buereverein.png`, gestapelte Lockup-Fassung), Links mittig,
+  eine hervorgehobene Aktion rechts als Pill in `ink`.
+  Die Höhe der Leiste ist die feste Grösse, das Logo richtet sich danach:
+  52px Logo neben 72px Leiste, 42px neben 64px. Das Bild trägt rundum 15px
+  transparenten Rand, sichtbar sind davon rund 92 Prozent.
 - Darunter das Hero als eingerückte Fläche mit `--radius`, Video als
   Hintergrund, `object-fit: cover`.
+- **`object-position: var(--hero-focus)`, gesetzt auf `50% 6%`.** Das Video ist
+  4:3, die Hero-Fläche deutlich breiter als hoch, `cover` schneidet also immer
+  Höhe weg. Zentriert fallen je nach Fenster 12 bis 18 Prozent oben weg, genau
+  dort steht der Kirchturm: gemessen liegt der oberste Nicht-Himmel-Pixel bei
+  3.0 bis 5.1 Prozent der Bildhöhe, die durchgehende Dachlinie bei 22 bis 28.
+  Bei 6 Prozent bleibt der Beschnitt oben über alle Fensterbreiten unter
+  2.5 Prozent, der Turm bleibt stehen, der Rest geht unten ab, dort ist Wasser.
+- Poster und Video teilen sich denselben Anker über `.hero-media`. Liefen sie
+  auseinander, würde das Bild springen, sobald das Video das Poster ablöst.
 - Über dem Video ein flächiger Abdunkler in `ink` mit **`--scrim: 0.39`**, kein
   Verlauf. Der Wert steht fest, er ist am Video gemessen. Siehe REFERENCE.md 4.1.
 - Headline zentriert, **zwei von Hand gesetzte Zeilen**, `display-xl`, in
