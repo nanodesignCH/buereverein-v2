@@ -1,0 +1,264 @@
+/* Design tokens per DESIGN.md. Shared by every preview variant so that the
+   variants differ in composition and motion only, never in colour or type. */
+
+@font-face {
+  font-family: 'Clash Display';
+  src: url('../public/fonts/ClashDisplay-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Clash Display';
+  src: url('../public/fonts/ClashDisplay-Semibold.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('../public/fonts/Satoshi-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('../public/fonts/Satoshi-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+
+:root {
+  --color-ink:        #000000;
+  --color-paper:      #ffffff;
+  --color-newsprint:  #e8e8e8;
+  --color-pewter:     #bfbfbf;
+  --color-terracotta: #c16a49;
+  --color-brick:      #bc4947;
+  --color-mauve:      #cd7a9f;
+
+  --text-display-xl: clamp(3.25rem, 9vw, 8.5rem);
+  --text-display-l:  clamp(2.25rem, 6vw, 5rem);
+  --text-display-m:  clamp(1.75rem, 3.5vw, 3rem);
+  --text-body-l:     1.25rem;
+  --text-body:       1rem;
+  --text-caption:    0.8125rem;
+
+  --radius:      24px;
+  --radius-pill: 999px;
+  --inset:       clamp(12px, 2vw, 32px);
+  --gutter:      clamp(16px, 4vw, 64px);
+  --section-gap: clamp(64px, 10vh, 160px);
+
+  /* Flat ink scrim over the hero video. 0.39 clears 3:1 for display sizes. */
+  --scrim: 0.39;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: 'Satoshi', system-ui, sans-serif;
+  font-size: var(--text-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+h1, h2, h3 {
+  font-family: 'Clash Display', system-ui, sans-serif;
+  font-weight: 500;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+p { margin: 0; max-width: 58ch; }
+
+.display-xl { font-size: var(--text-display-xl); }
+.display-l  { font-size: var(--text-display-l); }
+.display-m  { font-size: var(--text-display-m); }
+.body-l     { font-size: var(--text-body-l); line-height: 1.45; }
+
+.caption {
+  font-size: var(--text-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--color-ink);
+}
+
+/* --- Site header. Fixed, therefore outside #smooth-wrapper. --- */
+
+.site-header {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: var(--gutter);
+  padding: 14px var(--inset);
+  background: var(--color-paper);
+}
+.wordmark {
+  font-family: 'Clash Display', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 1.0625rem;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  color: var(--color-ink);
+}
+.site-nav {
+  display: flex;
+  gap: clamp(16px, 2.5vw, 36px);
+  margin-inline: auto;
+}
+.site-nav a {
+  font-size: var(--text-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+  text-decoration: none;
+  color: var(--color-ink);
+}
+.site-nav a:hover { text-decoration: underline; text-underline-offset: 4px; }
+@media (max-width: 860px) { .site-nav { display: none; } .site-header { justify-content: space-between; } }
+
+/* --- Buttons. Pills, solid and outline. Hover is CSS only, under 200ms. --- */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 22px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-ink);
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-family: 'Satoshi', system-ui, sans-serif;
+  font-size: var(--text-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 160ms, color 160ms, border-color 160ms;
+}
+.pill:hover { background: var(--color-paper); color: var(--color-ink); }
+.pill--outline { background: transparent; color: var(--color-ink); }
+.pill--outline:hover { background: var(--color-ink); color: var(--color-paper); }
+/* On a dark surface the outline flips to paper. */
+.on-dark .pill { background: var(--color-paper); color: var(--color-ink); border-color: var(--color-paper); }
+.on-dark .pill:hover { background: transparent; color: var(--color-paper); }
+.on-dark .pill--outline { background: transparent; color: var(--color-paper); border-color: var(--color-paper); }
+.on-dark .pill--outline:hover { background: var(--color-paper); color: var(--color-ink); }
+
+:where(a, button):focus-visible {
+  outline: 3px solid var(--color-ink);
+  outline-offset: 3px;
+}
+.on-dark :where(a, button):focus-visible { outline-color: var(--color-paper); }
+
+/* --- Inset surface. Every section sits as a radius surface inside --inset. --- */
+
+.surface {
+  margin-inline: var(--inset);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+/* --- Masked line reveal. One clipping wrapper per line. --- */
+
+/* The clip box is opened upwards by the amount the umlaut dots need at
+   line-height 0.95, and the same amount is pulled back off the flow, so the
+   line rhythm is unchanged and Ä Ö Ü are never cut. */
+.mask-line {
+  display: block;
+  overflow: hidden;
+  padding-top: 0.16em;
+  margin-top: -0.16em;
+}
+.mask-line > span { display: block; will-change: transform; }
+
+/* Horizontal clip box for the ressort run. Opened sideways by the amount a
+   negative letter-spacing pulls the first glyph past the box edge. */
+.clip {
+  overflow: hidden;
+  padding-inline: 0.06em;
+  margin-inline: -0.06em;
+}
+
+/* --- Progress track for the horizontal ressort run. --- */
+
+.track-progress {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+}
+.track-progress .rail {
+  position: relative;
+  flex: 1;
+  height: 1px;
+  background: var(--color-pewter);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.track-progress .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  border: 1px solid var(--color-ink);
+  padding: 0;
+  cursor: pointer;
+  transition: transform 160ms, background-color 160ms;
+}
+.track-progress .dot[aria-current='true'] {
+  background: transparent;
+  transform: scale(1.85);
+}
+.on-dark .track-progress .rail { background: color-mix(in srgb, var(--color-ink) 40%, transparent); }
+.on-dark .track-progress .dot { background: var(--color-ink); border-color: var(--color-ink); }
+.on-dark .track-progress .dot[aria-current='true'] { background: transparent; }
+
+.nav-arrows { display: flex; gap: 10px; }
+.nav-arrow {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--color-ink);
+  background: transparent;
+  color: var(--color-ink);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background-color 160ms, color 160ms;
+}
+.nav-arrow:hover { background: var(--color-ink); color: var(--color-paper); }
+.nav-arrow[disabled] { opacity: 0.3; cursor: default; }
+.nav-arrow[disabled]:hover { background: transparent; color: var(--color-ink); }
+.nav-arrow svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+
+/* --- Variant badge. Preview only, never ships. --- */
+
+.variant-badge {
+  position: fixed;
+  right: var(--inset);
+  bottom: var(--inset);
+  z-index: 60;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+  text-decoration: none;
+}

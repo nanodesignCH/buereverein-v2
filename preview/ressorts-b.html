@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ressort-Spur B, ruhige Spur ohne Farbe</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  /* Variant B: no colour cycling. One quiet newsprint surface, ink throughout,
+     so every pairing is valid at every scroll position without a single colour
+     switch. The mechanic is a real translation: a strip of eight panels slides
+     continuously, it does not swap. Composition differs too, headline and
+     running text sit together on the left, the right half stays open. */
+
+  .track-section { padding-block: var(--section-gap); }
+  .card {
+    position: relative;
+    height: calc(100svh - 2 * var(--inset));
+    min-height: 520px;
+    background: var(--color-newsprint);
+    padding: var(--gutter);
+    display: grid;
+    grid-template-rows: 1fr auto auto;
+    row-gap: 24px;
+  }
+
+  .viewport { overflow: hidden; }
+  .strip { display: flex; height: 100%; will-change: transform; }
+  .panel {
+    flex: 0 0 100%;
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    column-gap: var(--gutter);
+    align-content: start;
+  }
+  .panel > .col { grid-column: 1 / 8; display: grid; gap: 28px; align-content: start; }
+  .panel h3 { max-width: 11ch; }
+  .panel p { max-width: 46ch; }
+  .panel .caption { color: var(--color-ink); }
+
+  @media (max-width: 900px) {
+    .panel > .col { grid-column: 1 / 13; }
+    .panel h3 { max-width: none; }
+  }
+
+  .controls { grid-row: 2; display: flex; align-items: center; }
+  .rail-row { grid-row: 3; }
+
+  .track-section.is-static .card { height: auto; min-height: 0; display: block; }
+  .track-section.is-static .viewport { overflow: visible; }
+  .track-section.is-static .strip { display: grid; gap: 56px; transform: none !important; }
+  .track-section.is-static .panel { flex: none; }
+  .track-section.is-static .controls,
+  .track-section.is-static .rail-row { display: none; }
+
+  .lead-in, .tail { padding: var(--section-gap) var(--inset); }
+  .lead-in h2 { max-width: 16ch; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <a class="wordmark" href="index.html">BÜREVEREIN</a>
+  <nav class="site-nav">
+    <a href="#">Start</a><a href="#">Verein</a><a href="#">Ressorts</a><a href="#">Events</a><a href="#">Kontakt</a>
+  </nav>
+  <a class="pill" href="#">Jetzt anmelden</a>
+</header>
+
+<div id="smooth-wrapper">
+<div id="smooth-content">
+
+  <div class="lead-in">
+    <h2 class="display-l">Acht Ressorts, ein Verein</h2>
+  </div>
+
+  <section class="track-section" data-track aria-label="Ressorts">
+    <div class="surface card">
+      <div class="viewport"><div class="strip" data-strip></div></div>
+      <div class="controls">
+        <div class="nav-arrows">
+          <button class="nav-arrow" type="button" data-prev aria-label="Vorheriges Ressort"></button>
+          <button class="nav-arrow" type="button" data-next aria-label="Nächstes Ressort"></button>
+        </div>
+      </div>
+      <div class="rail-row"><div class="track-progress" data-progress></div></div>
+    </div>
+  </section>
+
+  <div class="tail"><p>Ende der Spur.</p></div>
+
+</div>
+</div>
+
+<a class="variant-badge" href="index.html">Spur B, ohne Farbe</a>
+
+<script src="vendor/gsap.min.js"></script>
+<script src="vendor/ScrollTrigger.min.js"></script>
+<script src="vendor/ScrollSmoother.min.js"></script>
+<script src="vendor/SplitText.min.js"></script>
+<script src="vendor/ScrollToPlugin.min.js"></script>
+<script type="module">
+import { createSmoother, refreshWhenReady, EASE, MOTION, REDUCED } from './lib.js';
+import { RESSORTS, ARROW, buildProgress } from './ressorts.js';
+
+createSmoother();
+
+const section = document.querySelector('[data-track]');
+const strip   = document.querySelector('[data-strip]');
+const prevBtn = document.querySelector('[data-prev]');
+const nextBtn = document.querySelector('[data-next]');
+prevBtn.innerHTML = ARROW.prev;
+nextBtn.innerHTML = ARROW.next;
+
+const n = RESSORTS.length;
+
+RESSORTS.forEach((r, i) => {
+  const el = document.createElement('article');
+  el.className = 'panel';
+  el.innerHTML = `
+    <div class="col">
+      <span class="caption">Ressort ${i + 1} von ${n}</span>
+      <h3 class="display-l">${r.titel}</h3>
+      <p>${r.teaser}</p>
+    </div>`;
+  strip.appendChild(el);
+});
+
+const setActiveDot = buildProgress(document.querySelector('[data-progress]'), n, (i) => jumpTo(i));
+
+let st = null;
+let current = 0;
+
+function jumpTo(i) {
+  if (!st) return;
+  const y = st.start + (st.end - st.start) * (i / (n - 1));
+  const smoother = ScrollSmoother.get();
+  if (smoother) smoother.scrollTo(y, true);
+  else gsap.to(window, { scrollTo: y, duration: 0.6, ease: EASE.inOut });
+}
+function setCurrent(i) {
+  current = i;
+  setActiveDot(i);
+  prevBtn.disabled = i === 0;
+  nextBtn.disabled = i === n - 1;
+}
+prevBtn.addEventListener('click', () => jumpTo(Math.max(0, current - 1)));
+nextBtn.addEventListener('click', () => jumpTo(Math.min(n - 1, current + 1)));
+
+const mm = gsap.matchMedia();
+
+mm.add(MOTION, () => {
+  // The strip is as wide as the viewport and its panels overflow to the right,
+  // so one xPercent step of 100 equals exactly one panel.
+  const tween = gsap.to(strip, {
+    xPercent: -100 * (n - 1),
+    ease: EASE.scrub,
+    scrollTrigger: {
+      trigger: section,
+      start: 'top top',
+      end: () => '+=' + (n - 1) * window.innerHeight * 0.85,
+      pin: true,
+      scrub: 1,
+      invalidateOnRefresh: true,
+      onUpdate: (self) => setCurrent(Math.round(self.progress * (n - 1))),
+    },
+  });
+  st = tween.scrollTrigger;
+  setCurrent(0);
+  return () => { st = null; };
+});
+
+mm.add(REDUCED, () => {
+  section.classList.add('is-static');
+  return () => section.classList.remove('is-static');
+});
+
+refreshWhenReady();
+</script>
+</body>
+</html>

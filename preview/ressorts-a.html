@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ressort-Spur A, Textkarte mit Farbzyklierung</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  /* Variant A: the reference text card. One entry fills the card, headline top
+     left, running text in the right third, controls bottom left, progress rail
+     along the bottom edge. The card surface cycles through the three club
+     tones. The colour switches hard at the midpoint of each transition, at the
+     same instant as the text colour, so surface and text are never in an
+     invalid pairing. */
+
+  .track-section { padding-block: var(--section-gap); }
+  .card {
+    position: relative;
+    height: calc(100svh - 2 * var(--inset));
+    min-height: 520px;
+    background: var(--color-terracotta);
+    padding: var(--gutter);
+    display: grid;
+    grid-template-rows: auto 1fr auto auto;
+    row-gap: 24px;
+  }
+
+  .stage { position: relative; grid-row: 1 / 3; }
+  .panel {
+    position: absolute; inset: 0;
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    column-gap: var(--gutter);
+    align-content: start;
+  }
+  .panel .h { grid-column: 1 / 8; }
+  .panel .b { grid-column: 8 / 13; align-self: center; margin-top: clamp(24px, 12vh, 120px); }
+  .panel h3 { max-width: 12ch; }
+  .panel p { max-width: 40ch; }
+  /* The moved element must be as wide as its clip box, otherwise a shift of
+     110 percent of its own width does not carry it out of view. */
+  .mv { width: 100%; }
+
+  @media (max-width: 900px) {
+    .panel { grid-template-columns: 1fr; }
+    .panel .h, .panel .b { grid-column: 1; }
+    .panel .b { align-self: start; margin-top: 28px; }
+    .panel h3 { max-width: none; }
+  }
+
+  /* Every moving text sits in its own clipping wrapper so nothing is ever
+     visible outside the card and no line is cut mid word. */
+  .clip > * { will-change: transform; }
+
+  .controls { grid-row: 3; display: flex; align-items: center; }
+  .rail-row { grid-row: 4; }
+
+  /* Reduced motion: the run becomes a plain vertical list, everything visible. */
+  .track-section.is-static .card { height: auto; min-height: 0; display: block; }
+  .track-section.is-static .stage { position: static; display: grid; gap: 56px; }
+  .track-section.is-static .panel { position: static; }
+  .track-section.is-static .clip { overflow: visible; }
+  .track-section.is-static .controls,
+  .track-section.is-static .rail-row { display: none; }
+
+  .lead-in, .tail { padding: var(--section-gap) var(--inset); }
+  .lead-in h2 { max-width: 16ch; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <a class="wordmark" href="index.html">BÜREVEREIN</a>
+  <nav class="site-nav">
+    <a href="#">Start</a><a href="#">Verein</a><a href="#">Ressorts</a><a href="#">Events</a><a href="#">Kontakt</a>
+  </nav>
+  <a class="pill" href="#">Jetzt anmelden</a>
+</header>
+
+<div id="smooth-wrapper">
+<div id="smooth-content">
+
+  <div class="lead-in">
+    <h2 class="display-l">Acht Ressorts, ein Verein</h2>
+  </div>
+
+  <section class="track-section" data-track aria-label="Ressorts">
+    <div class="surface card" data-card>
+      <div class="stage" data-stage></div>
+      <div class="controls">
+        <div class="nav-arrows">
+          <button class="nav-arrow" type="button" data-prev aria-label="Vorheriges Ressort"></button>
+          <button class="nav-arrow" type="button" data-next aria-label="Nächstes Ressort"></button>
+        </div>
+      </div>
+      <div class="rail-row"><div class="track-progress" data-progress></div></div>
+    </div>
+  </section>
+
+  <div class="tail"><p>Ende der Spur.</p></div>
+
+</div>
+</div>
+
+<a class="variant-badge" href="index.html">Spur A, Farbzyklierung</a>
+
+<script src="vendor/gsap.min.js"></script>
+<script src="vendor/ScrollTrigger.min.js"></script>
+<script src="vendor/ScrollSmoother.min.js"></script>
+<script src="vendor/SplitText.min.js"></script>
+<script src="vendor/ScrollToPlugin.min.js"></script>
+<script type="module">
+import { createSmoother, refreshWhenReady, STAG, EASE, MOTION, REDUCED } from './lib.js';
+import { RESSORTS, TONES, ARROW, buildProgress } from './ressorts.js';
+
+createSmoother();
+
+const section = document.querySelector('[data-track]');
+const card    = document.querySelector('[data-card]');
+const stage   = document.querySelector('[data-stage]');
+const prevBtn = document.querySelector('[data-prev]');
+const nextBtn = document.querySelector('[data-next]');
+prevBtn.innerHTML = ARROW.prev;
+nextBtn.innerHTML = ARROW.next;
+
+const n = RESSORTS.length;
+const styles = getComputedStyle(document.documentElement);
+const tone = (i) => styles.getPropertyValue(`--color-${TONES[i % TONES.length]}`).trim();
+// Contrast per DESIGN.md: paper on brick, ink on terracotta and mauve.
+const inkOn = (i) => (TONES[i % TONES.length] === 'brick' ? styles.getPropertyValue('--color-paper').trim()
+                                                          : styles.getPropertyValue('--color-ink').trim());
+
+RESSORTS.forEach((r, i) => {
+  const el = document.createElement('article');
+  el.className = 'panel';
+  el.innerHTML = `
+    <div class="h clip"><div class="mv"><h3 class="display-l">${r.titel}</h3></div></div>
+    <div class="b clip"><div class="mv"><p>${r.teaser}</p></div></div>`;
+  el.style.color = inkOn(i);
+  stage.appendChild(el);
+});
+
+const panels = [...stage.querySelectorAll('.panel')];
+const parts  = panels.map((p) => [...p.querySelectorAll('.mv')]);
+
+const setActiveDot = buildProgress(document.querySelector('[data-progress]'), n, (i) => jumpTo(i));
+
+let st = null;
+
+function jumpTo(i) {
+  if (!st) return;
+  const y = st.start + (st.end - st.start) * (i / (n - 1));
+  const smoother = ScrollSmoother.get();
+  if (smoother) smoother.scrollTo(y, true);
+  else gsap.to(window, { scrollTo: y, duration: 0.6, ease: EASE.inOut });
+}
+
+let current = 0;
+function setCurrent(i) {
+  current = i;
+  setActiveDot(i);
+  prevBtn.disabled = i === 0;
+  nextBtn.disabled = i === n - 1;
+  card.setAttribute('aria-label', `${RESSORTS[i].titel}, ${i + 1} von ${n}`);
+}
+prevBtn.addEventListener('click', () => jumpTo(Math.max(0, current - 1)));
+nextBtn.addEventListener('click', () => jumpTo(Math.min(n - 1, current + 1)));
+
+const mm = gsap.matchMedia();
+
+mm.add(MOTION, () => {
+  gsap.set(card, { backgroundColor: tone(0) });
+  panels.forEach((p, i) => { if (i > 0) gsap.set(parts[i], { xPercent: 110 }); });
+
+  const tl = gsap.timeline({
+    defaults: { ease: EASE.scrub, duration: 0.38 },
+    scrollTrigger: {
+      trigger: section,
+      start: 'top top',
+      end: () => '+=' + (n - 1) * window.innerHeight * 0.85,
+      pin: true,
+      scrub: 1,
+      invalidateOnRefresh: true,
+      onUpdate: (self) => setCurrent(Math.round(self.progress * (n - 1))),
+    },
+  });
+
+  for (let i = 0; i < n - 1; i++) {
+    // Old text leaves to the left, new text enters from the right,
+    // headline and running text offset by STAG.tight.
+    tl.to(parts[i], { xPercent: -110, stagger: STAG.tight }, i);
+    // The tone flips hard in the gap where the old text has left and the new
+    // one has not entered. Each panel keeps the text colour of its own tone
+    // for good, so no text is ever on a tone it was not measured against and
+    // nothing has to be reverted when the scrub runs backwards.
+    tl.set(card, { backgroundColor: tone(i + 1) }, i + 0.5);
+    tl.to(parts[i + 1], { xPercent: 0, stagger: STAG.tight }, i + 0.55);
+  }
+  tl.to({}, { duration: 0.001 }, n - 1);
+
+  st = tl.scrollTrigger;
+  setCurrent(0);
+
+  return () => { st = null; };
+});
+
+mm.add(REDUCED, () => {
+  section.classList.add('is-static');
+  gsap.set(card, { backgroundColor: styles.getPropertyValue('--color-newsprint').trim() });
+  panels.forEach((p) => { p.style.color = styles.getPropertyValue('--color-ink').trim(); });
+  gsap.set(parts.flat(), { xPercent: 0 });
+  return () => section.classList.remove('is-static');
+});
+
+refreshWhenReady();
+</script>
+</body>
+</html>

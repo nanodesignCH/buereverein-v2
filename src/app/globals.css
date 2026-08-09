@@ -1,0 +1,173 @@
+@import 'tailwindcss';
+
+/* Tokens per DESIGN.md. This file is the single source, components read the
+   variables, they never restate a value. */
+
+@theme {
+  --color-ink: #000000;
+  --color-paper: #ffffff;
+  --color-newsprint: #e8e8e8;
+  --color-pewter: #bfbfbf;
+  --color-terracotta: #c16a49;
+  --color-brick: #bc4947;
+  --color-mauve: #cd7a9f;
+
+  --font-display: var(--font-display), system-ui, sans-serif;
+  --font-body: var(--font-body), system-ui, sans-serif;
+
+  --text-display-xl: clamp(3.25rem, 9vw, 8.5rem);
+  --text-display-l: clamp(2.25rem, 6vw, 5rem);
+  --text-display-m: clamp(1.75rem, 3.5vw, 3rem);
+  --text-body-l: 1.25rem;
+  --text-body: 1rem;
+  --text-caption: 0.8125rem;
+
+  --radius-surface: 24px;
+  --radius-pill: 999px;
+}
+
+/* Base and helper rules live inside Tailwind's layers on purpose. Unlayered
+   CSS beats every layered utility regardless of specificity, so a plain
+   `p { margin: 0 }` outside a layer would silently disable utilities like
+   space-y on paragraphs. */
+
+@layer base {
+  :root {
+    --inset: clamp(12px, 2vw, 32px);
+    --gutter: clamp(16px, 4vw, 64px);
+    --section-gap: clamp(64px, 10vh, 160px);
+    --header-h: 72px;
+
+    /* Measured against the hero video, see REFERENCE.md 4.1. Not a guess. */
+    --scrim: 0.39;
+    --track-card: clamp(280px, 62vw, 720px);
+  }
+
+  @media (max-width: 640px) {
+    :root {
+      --header-h: 64px;
+    }
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    font-size: var(--text-body);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 500;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  img,
+  video {
+    display: block;
+    max-width: 100%;
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+  }
+
+  /* Visible keyboard focus on every interactive element, no exceptions. */
+  :where(a, button, [tabindex]):focus-visible {
+    outline: 3px solid var(--color-ink);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  .on-dark :where(a, button, [tabindex]):focus-visible {
+    outline-color: var(--color-paper);
+  }
+}
+
+@layer components {
+  /* Type utilities. The scale has gaps on purpose, there is nothing between
+     display and body. */
+
+  .display-xl {
+    font-size: var(--text-display-xl);
+  }
+  .display-l {
+    font-size: var(--text-display-l);
+  }
+  .display-m {
+    font-size: var(--text-display-m);
+  }
+
+  .body-l {
+    font-size: var(--text-body-l);
+    line-height: 1.45;
+  }
+
+  .measure {
+    max-width: 58ch;
+  }
+
+  .caption {
+    font-family: var(--font-body);
+    font-size: var(--text-caption);
+    font-weight: 500;
+    line-height: 1.4;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* Inset surface. Every section is a radius surface inside --inset.
+     This holds for every section or for none, no mixed form. */
+
+  .surface {
+    margin-inline: var(--inset);
+    border-radius: var(--radius-surface);
+    overflow: hidden;
+  }
+
+  /* Masked line reveal. The clip box is opened upwards by the amount the
+     umlaut dots need at line-height 0.95 and the same amount is pulled back
+     off the flow, so the line rhythm is unchanged and Ä Ö Ü never clip. */
+
+  .mask-line {
+    display: block;
+    overflow: hidden;
+    padding-top: 0.16em;
+    margin-top: -0.16em;
+  }
+
+  .mask-line > span {
+    display: block;
+    will-change: transform;
+  }
+
+  /* Until the reveal runs, the lines sit outside their mask. Without this the
+     text flashes at full size before the first frame. Reduced motion and the
+     no script case both clear it. */
+  .js-mask-pending .mask-line > span {
+    transform: translateY(115%);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .js-mask-pending .mask-line > span {
+      transform: none;
+    }
+  }
+}

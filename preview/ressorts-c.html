@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ressort-Spur C, Band mit angeschnittenen Nachbarn</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  /* Variant C: a literal horizontal run. Eight surfaces travel past, the next
+     one already cut off at the right edge. Each surface carries one club tone
+     and the text colour that belongs to it, so the cycling happens by passing
+     by rather than by interpolating. No colour is ever crossfaded and no text
+     ever sits on a tone it was not measured against. */
+
+  .track-section { padding-block: var(--section-gap); }
+  .stage {
+    height: calc(100svh - 2 * var(--inset));
+    min-height: 520px;
+    display: grid;
+    grid-template-rows: 1fr auto auto;
+    row-gap: 24px;
+  }
+  .viewport { overflow: hidden; padding-inline: var(--inset); }
+  .strip { display: flex; gap: var(--gutter); height: 100%; will-change: transform; }
+
+  .rcard {
+    flex: 0 0 clamp(280px, 62vw, 720px);
+    border-radius: var(--radius);
+    padding: var(--gutter);
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    row-gap: 20px;
+  }
+  .rcard h3 { max-width: 11ch; }
+  .rcard p { max-width: 40ch; align-self: end; }
+  /* No reduced opacity on the caption. DESIGN.md wants muted text through
+     size and capitals, never through lowered contrast. */
+
+  .controls { display: flex; align-items: center; padding-inline: var(--inset); }
+  .rail-row { padding-inline: var(--inset); }
+
+  .track-section.is-static .stage { height: auto; min-height: 0; display: block; }
+  .track-section.is-static .viewport { overflow: visible; }
+  .track-section.is-static .strip { display: grid; gap: 20px; transform: none !important; }
+  .track-section.is-static .rcard { flex: none; }
+  .track-section.is-static .controls,
+  .track-section.is-static .rail-row { display: none; }
+
+  .lead-in, .tail { padding: var(--section-gap) var(--inset); }
+  .lead-in h2 { max-width: 16ch; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <a class="wordmark" href="index.html">BÜREVEREIN</a>
+  <nav class="site-nav">
+    <a href="#">Start</a><a href="#">Verein</a><a href="#">Ressorts</a><a href="#">Events</a><a href="#">Kontakt</a>
+  </nav>
+  <a class="pill" href="#">Jetzt anmelden</a>
+</header>
+
+<div id="smooth-wrapper">
+<div id="smooth-content">
+
+  <div class="lead-in">
+    <h2 class="display-l">Acht Ressorts, ein Verein</h2>
+  </div>
+
+  <section class="track-section" data-track aria-label="Ressorts">
+    <div class="stage">
+      <div class="viewport" data-viewport><div class="strip" data-strip></div></div>
+      <div class="controls">
+        <div class="nav-arrows">
+          <button class="nav-arrow" type="button" data-prev aria-label="Vorheriges Ressort"></button>
+          <button class="nav-arrow" type="button" data-next aria-label="Nächstes Ressort"></button>
+        </div>
+      </div>
+      <div class="rail-row"><div class="track-progress" data-progress></div></div>
+    </div>
+  </section>
+
+  <div class="tail"><p>Ende der Spur.</p></div>
+
+</div>
+</div>
+
+<a class="variant-badge" href="index.html">Spur C, Band</a>
+
+<script src="vendor/gsap.min.js"></script>
+<script src="vendor/ScrollTrigger.min.js"></script>
+<script src="vendor/ScrollSmoother.min.js"></script>
+<script src="vendor/SplitText.min.js"></script>
+<script src="vendor/ScrollToPlugin.min.js"></script>
+<script type="module">
+import { createSmoother, refreshWhenReady, EASE, MOTION, REDUCED } from './lib.js';
+import { RESSORTS, TONES, ARROW, buildProgress } from './ressorts.js';
+
+createSmoother();
+
+const section  = document.querySelector('[data-track]');
+const viewport = document.querySelector('[data-viewport]');
+const strip    = document.querySelector('[data-strip]');
+const prevBtn  = document.querySelector('[data-prev]');
+const nextBtn  = document.querySelector('[data-next]');
+prevBtn.innerHTML = ARROW.prev;
+nextBtn.innerHTML = ARROW.next;
+
+const n = RESSORTS.length;
+const styles = getComputedStyle(document.documentElement);
+const v = (name) => styles.getPropertyValue(name).trim();
+
+RESSORTS.forEach((r, i) => {
+  const toneName = TONES[i % TONES.length];
+  const el = document.createElement('article');
+  el.className = 'rcard';
+  el.style.background = v(`--color-${toneName}`);
+  // Contrast per DESIGN.md: paper on brick, ink on terracotta and mauve.
+  el.style.color = toneName === 'brick' ? v('--color-paper') : v('--color-ink');
+  el.innerHTML = `
+    <span class="caption">Ressort ${i + 1} von ${n}</span>
+    <h3 class="display-l">${r.titel}</h3>
+    <p>${r.teaser}</p>`;
+  strip.appendChild(el);
+});
+
+const setActiveDot = buildProgress(document.querySelector('[data-progress]'), n, (i) => jumpTo(i));
+
+let st = null;
+let current = 0;
+
+function jumpTo(i) {
+  if (!st) return;
+  const y = st.start + (st.end - st.start) * (i / (n - 1));
+  const smoother = ScrollSmoother.get();
+  if (smoother) smoother.scrollTo(y, true);
+  else gsap.to(window, { scrollTo: y, duration: 0.6, ease: EASE.inOut });
+}
+function setCurrent(i) {
+  current = i;
+  setActiveDot(i);
+  prevBtn.disabled = i === 0;
+  nextBtn.disabled = i === n - 1;
+}
+prevBtn.addEventListener('click', () => jumpTo(Math.max(0, current - 1)));
+nextBtn.addEventListener('click', () => jumpTo(Math.min(n - 1, current + 1)));
+
+const distance = () => Math.max(0, strip.scrollWidth - viewport.clientWidth);
+
+const mm = gsap.matchMedia();
+
+mm.add(MOTION, () => {
+  const tween = gsap.to(strip, {
+    x: () => -distance(),
+    ease: EASE.scrub,
+    scrollTrigger: {
+      trigger: section,
+      start: 'top top',
+      end: () => '+=' + distance(),
+      pin: true,
+      scrub: 1,
+      invalidateOnRefresh: true,
+      onUpdate: (self) => setCurrent(Math.round(self.progress * (n - 1))),
+    },
+  });
+  st = tween.scrollTrigger;
+  setCurrent(0);
+  return () => { st = null; };
+});
+
+mm.add(REDUCED, () => {
+  section.classList.add('is-static');
+  return () => section.classList.remove('is-static');
+});
+
+refreshWhenReady();
+</script>
+</body>
+</html>
