@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useCallback, useRef, useState } from 'react'
 import { useGSAP } from '@gsap/react'
-import { gsap, ScrollSmoother, ScrollTrigger, EASE, MOTION, REDUCED } from '@/lib/gsap'
+import { gsap, ScrollSmoother, ScrollTrigger, EASE, MQ } from '@/lib/gsap'
 import { NavArrow } from '@/components/ui/NavArrow'
 import { ProgressTrack } from '@/components/ui/ProgressTrack'
 import { ressortTrack } from '@/data/site'
@@ -73,7 +73,9 @@ export function RessortTrack({ ressorts }: { ressorts: Ressort[] }) {
 
       const mm = gsap.matchMedia()
 
-      mm.add(MOTION, () => {
+      /* Desktop, from 768px: the horizontal band of REFERENCE.md 4.4.
+         One tween, one trigger, scroll distance equals the horizontal travel. */
+      mm.add(MQ.desktop, () => {
         const distance = () => Math.max(0, rail.scrollWidth - view.clientWidth)
 
         const tween = gsap.to(rail, {
@@ -101,8 +103,52 @@ export function RessortTrack({ ressorts }: { ressorts: Ressort[] }) {
         }
       })
 
-      mm.add(REDUCED, () => {
-        /* No pin, no scrub. The surfaces stack, controls disappear. */
+      /* Below 768px: the same eight surfaces, stacked instead of side by side.
+         Each card rises from below over its predecessor and locks in place.
+         The card underneath shrinks a little and moves up into --stack-peek, so
+         the stack reads as a stack rather than as a single card. */
+      mm.add(MQ.mobile, () => {
+        const cards = gsap.utils.toArray<HTMLElement>(':scope > li', rail)
+        if (cards.length < 2) return
+
+        gsap.set(cards, { zIndex: (i: number) => i })
+        gsap.set(cards.slice(1), { yPercent: 100 })
+
+        const tl = gsap.timeline({
+          defaults: { ease: EASE.scrub, duration: 1 },
+          scrollTrigger: {
+            trigger: section,
+            start: 'top top',
+            end: () => `+=${(count - 1) * window.innerHeight * 0.7}`,
+            pin: true,
+            scrub: 1,
+            invalidateOnRefresh: true,
+            onUpdate: (self) => {
+              setActive(Math.round(self.progress * (count - 1)))
+            },
+          },
+        })
+
+        for (let i = 0; i < count - 1; i++) {
+          /* The outgoing card settles back, the incoming one comes up. Both run
+             over the same unit, so a card is never in mid air on its own. */
+          tl.to(cards[i]!, { scale: 0.94, yPercent: -6 }, i)
+          tl.to(cards[i + 1]!, { yPercent: 0 }, i)
+        }
+
+        trigger.current = tl.scrollTrigger ?? null
+
+        return () => {
+          trigger.current = null
+          tl.scrollTrigger?.kill()
+          tl.kill()
+          gsap.set(cards, { clearProps: 'transform,zIndex' })
+        }
+      })
+
+      mm.add(MQ.reduced, () => {
+        /* No pin, no stacking. The eight surfaces stand underneath each other
+           as ordinary cards, controls and progress line disappear. */
         trigger.current = null
       })
 
@@ -119,16 +165,24 @@ export function RessortTrack({ ressorts }: { ressorts: Ressort[] }) {
 
       <div className="grid gap-6 motion-safe:h-[calc(100svh-var(--header-h)-2*var(--inset))] motion-safe:grid-rows-[1fr_auto_auto]">
         <div ref={viewport} className="overflow-hidden px-[var(--inset)]">
+          {/* The base layout is the reduced motion one: a plain vertical list.
+              motion-safe then switches to the mobile stack, and motion-safe:md
+              to the horizontal band. Written in that order so that the safest
+              layout is what renders before any script has run. */}
           <ul
             ref={strip}
-            className="m-0 flex list-none gap-[var(--gutter)] p-0 motion-safe:h-full motion-reduce:flex-col"
+            className="m-0 flex list-none flex-col gap-5 p-0
+                       motion-safe:relative motion-safe:block motion-safe:h-full
+                       motion-safe:md:flex motion-safe:md:flex-row motion-safe:md:gap-[var(--gutter)]"
           >
             {ressorts.map((ressort, index) => {
               const tone = tones[index % tones.length]!
               return (
                 <li
                   key={ressort.slug}
-                  className="motion-safe:w-[var(--track-card)] motion-safe:shrink-0 motion-reduce:w-full"
+                  className="w-full
+                             motion-safe:absolute motion-safe:inset-x-0 motion-safe:bottom-0 motion-safe:top-[var(--stack-peek)]
+                             motion-safe:md:static motion-safe:md:inset-auto motion-safe:md:w-[var(--track-card)] motion-safe:md:shrink-0"
                 >
                   <Link
                     href={`/ressorts/${ressort.slug}`}

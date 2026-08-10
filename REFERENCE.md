@@ -118,8 +118,26 @@ Subline, maximal zwei Aktionen.
    Fehler, der das Scrubbing vollständig lahmlegte.
 5. Beim Verlassen des Pins kein Sprung, kein Fade der ganzen Sektion.
 
-**Reduced Motion:** kein Video, `src` wird entfernt, das Poster steht. Kein Pin,
-kein Scrub, kein Smoother. Die Headline-Zeilen stehen sofort auf Endposition.
+**Unter 768px, ergänzt am 10.08.2026:**
+
+- **Kein Pin, kein Scrub.** Die Sektion scrollt normal weiter.
+- **Das Video wird gar nicht geladen.** Das `src`-Attribut steht nicht im
+  Markup, es wird ausschliesslich im Desktop-Zweig gesetzt. Unterhalb von 768px
+  bekommt das Element also nie eine Quelle und der Browser fordert die 15.75 MB
+  nie an. Grund: das Scrubben von `currentTime` ist auf Touch nicht flüssig zu
+  bekommen und kollidiert mit dem nativen Scroll, es gäbe auf dem Handy also
+  nichts, wofür das Video da wäre.
+- **Das Poster ist der statische Hintergrund**, mit derselben Typografie
+  darüber. Der Abdunkler bleibt bei 39 %.
+- **Der Masken-Reveal der Headline läuft unverändert**, gleiche Zeilen, gleicher
+  Stagger, gleiche Dauer. Er hängt nicht am Breakpoint, sondern nur an
+  `prefers-reduced-motion`.
+- Beim Zurückwechseln über 768px wird das `src` wieder entfernt, damit auf einem
+  schmalen Viewport kein dekodiertes Video im Speicher liegen bleibt.
+
+**Reduced Motion:** dasselbe wie unter 768px. Kein Video, kein Pin, kein Scrub,
+kein Smoother. Das Poster steht, die Headline-Zeilen stehen sofort auf
+Endposition.
 
 ### 4.2 Übergang Hero zu Folgesektion
 **Referenz:** `herotonextsectionanimation.png`
@@ -207,8 +225,44 @@ Die Wechselmechanik der Textkarte gilt **nicht** mehr.
 - Vor- und Zurück-Steuerung sowie die Punkte springen über ScrollSmoother
   beziehungsweise ScrollToPlugin an die Scrollposition des Ziel-Index.
 
-**Reduced Motion:** kein Pin, kein Scrub. Die acht Flächen stehen untereinander,
-Steuerung und Fortschrittslinie entfallen, alles ist vollständig sichtbar.
+**Unter 768px, ergänzt am 10.08.2026: gestapelte Karten statt Band.**
+
+Die horizontale Spur wird auf schmalen Viewports durch eine vertikale Stapel-
+Mechanik ersetzt. Inhalt, Farben und Anatomie der Karte bleiben identisch, nur
+die Bewegung ist eine andere.
+
+- **Sektion gepinnt, der Viewport steht still.** Die acht Karten liegen
+  gestapelt übereinander, `z-index` in Lesereihenfolge.
+- **Beim Scrollen schiebt sich die nächste Karte von unten über die vorige**,
+  `yPercent: 100 → 0`, und rastet ein.
+- **Die darunterliegende Karte bleibt angedeutet sichtbar:** sie geht auf
+  `scale: 0.94` und `yPercent: -6` und steigt damit in den Freiraum
+  `--stack-peek` (44px) am oberen Rand der Bühne. Ohne diesen Freiraum würde
+  die ankommende Karte ihre Vorgängerin randlos verdecken und der Stapel wäre
+  als Stapel nicht mehr lesbar.
+- **`scrub: 1`, `ease: 'none'`.** Kein Ease auf einem Scrub.
+- **Scrolldistanz 70vh pro Karte**, also `(n - 1) × 0.7 × Viewporthöhe`.
+- Aus- und Einlaufen einer Karte teilen sich dieselbe Zeiteinheit, eine Karte
+  hängt also nie allein in der Luft.
+- **Fortschrittslinie, Punkte und Vor-Zurück-Steuerung bleiben unverändert**,
+  inklusive Ring auf dem aktiven Punkt. Sie greifen auf denselben Trigger zu wie
+  auf dem Desktop.
+- **Die Farbzyklierung bleibt**, jetzt pro Karte im Stapel statt pro Karte im
+  Band. Weiterhin wird keine Farbe interpoliert.
+
+**Breakpoint und Übergabe:** die beiden Zweige laufen über `gsap.matchMedia()`
+mit `(min-width: 768px)` und `(max-width: 767.98px)`, jeweils kombiniert mit
+`(prefers-reduced-motion: no-preference)`. Die Queries lassen weder Lücke noch
+Überlappung, bei genau 768px greift der Desktop-Zweig. Nachgemessen bei 767,
+768, 1000 und beim Wechsel in beide Richtungen ohne Neuladen: nie mehr als **ein
+ScrollTrigger pro Sektion**. Beim Verlassen des Mobil-Zweigs werden die
+Stapel-Transformationen über `clearProps` zurückgenommen.
+
+**Reduced Motion:** kein Pin, keine Stapelung, kein Scrub. Die acht Flächen
+stehen als gewöhnliche Karten untereinander, Steuerung und Fortschrittslinie
+entfallen, alles ist vollständig sichtbar. Das ist zugleich das Grundlayout im
+Markup, die beiden Bewegungsvarianten werden erst über `motion-safe`
+darübergelegt.
 
 ### 4.5 Vorstand
 **Referenz:** `grid_start.png` als Rasterlogik

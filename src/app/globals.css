@@ -51,6 +51,11 @@
        windows, so the tower always survives and a little sky stays above it.
        The remaining overflow comes off the bottom, which is water. */
     --hero-focus: 50% 6%;
+
+    /* Room above the mobile card stack. The card underneath rises into it when
+       the next one arrives, so the stack stays readable as a stack. Without
+       this the incoming card would cover its predecessor edge to edge. */
+    --stack-peek: 44px;
   }
 
   @media (max-width: 640px) {

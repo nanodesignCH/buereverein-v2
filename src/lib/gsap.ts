@@ -28,3 +28,13 @@ export const SEEK_EPSILON = 1 / 48
 
 export const MOTION = '(prefers-reduced-motion: no-preference)'
 export const REDUCED = '(prefers-reduced-motion: reduce)'
+
+/* Breakpoint between the mobile and the desktop mechanic, the same 768px that
+   Tailwind's md: uses. The two queries are written so that they can never both
+   match: 767.98 and 768 leave no gap and no overlap, so at exactly 768px only
+   the desktop branch runs and no section ever holds two ScrollTriggers. */
+export const MQ = {
+  desktop: '(min-width: 768px) and (prefers-reduced-motion: no-preference)',
+  mobile: '(max-width: 767.98px) and (prefers-reduced-motion: no-preference)',
+  reduced: REDUCED,
+} as const

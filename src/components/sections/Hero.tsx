@@ -2,12 +2,21 @@
 
 import { useRef } from 'react'
 import { useGSAP } from '@gsap/react'
-import { gsap, EASE, SEEK_EPSILON, MOTION, REDUCED } from '@/lib/gsap'
+import { gsap, EASE, SEEK_EPSILON, MQ } from '@/lib/gsap'
 import { MaskedHeading } from '@/components/motion/MaskedHeading'
 import { Button } from '@/components/ui/Button'
 import { hero, primaryAction } from '@/data/site'
 
-/* Mechanic per REFERENCE.md 4.1, variant A from the prototype gate. */
+/* Mechanic per REFERENCE.md 4.1, variant A from the prototype gate.
+
+   The video source is deliberately absent from the markup and only assigned
+   inside the desktop branch. Below 768px the element therefore never gets a
+   src and the browser never requests the 15.75 MB file: scrubbing currentTime
+   is not achievable smoothly on touch and fights the native scroll, so there
+   is nothing on mobile the video could be used for. The poster carries the
+   section instead. */
+
+const VIDEO_SRC = '/video/hero_video_scrub.mp4'
 
 export function Hero() {
   const root = useRef<HTMLElement>(null)
@@ -21,7 +30,8 @@ export function Hero() {
 
       const mm = gsap.matchMedia()
 
-      mm.add(MOTION, () => {
+      mm.add(MQ.desktop, () => {
+        el.src = VIDEO_SRC
         const proxy = { time: 0 }
         let tween: gsap.core.Tween | null = null
         let frame = 0
@@ -62,14 +72,17 @@ export function Hero() {
           el.removeEventListener('loadedmetadata', start)
           tween?.scrollTrigger?.kill()
           tween?.kill()
+          /* Crossing below 768px drops the source again, so a resize does not
+             leave a decoded video sitting in memory on a phone sized viewport. */
+          el.removeAttribute('src')
+          el.load()
         }
       })
 
-      mm.add(REDUCED, () => {
-        /* No video at all. The poster stands, with the same typography over it. */
-        el.removeAttribute('src')
-        el.load()
-      })
+      /* Mobile and reduced motion share the same answer: no pin, no scrub, no
+         video. The poster stands and the section scrolls on normally. The
+         headline reveal is not registered here at all, it lives in
+         MaskedHeading and runs identically on every width. */
 
       return () => mm.revert()
     },
@@ -79,8 +92,9 @@ export function Hero() {
   return (
     <section ref={root} className="h-svh pb-[var(--inset)] pt-[var(--header-h)]">
       <div className="surface on-dark relative h-full bg-[var(--color-ink)]">
-        {/* Poster underneath the video: if the video fails or is never loaded,
-            the section is still never empty. */}
+        {/* Poster underneath the video. It is the only background on mobile and
+            under reduced motion, and on desktop it stands until the first frame
+            is decoded. The section is therefore never empty. */}
         <img
           src="/images/hero-poster.jpg"
           alt=""
@@ -89,9 +103,9 @@ export function Hero() {
           height={1248}
           className="hero-media"
         />
+        {/* No src attribute on purpose, see the note at the top of the file. */}
         <video
           ref={video}
-          src="/video/hero_video_scrub.mp4"
           muted
           playsInline
           preload="auto"
