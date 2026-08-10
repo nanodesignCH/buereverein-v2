@@ -8,10 +8,11 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { ScrollSmoother } from 'gsap/ScrollSmoother'
 import { SplitText } from 'gsap/SplitText'
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin'
+import { Observer } from 'gsap/Observer'
 
-gsap.registerPlugin(ScrollTrigger, ScrollSmoother, SplitText, ScrollToPlugin)
+gsap.registerPlugin(ScrollTrigger, ScrollSmoother, SplitText, ScrollToPlugin, Observer)
 
-export { gsap, ScrollTrigger, ScrollSmoother, SplitText, ScrollToPlugin }
+export { gsap, ScrollTrigger, ScrollSmoother, SplitText, ScrollToPlugin, Observer }
 
 /* Constants per DESIGN.md 5. There is no second source for these numbers. */
 

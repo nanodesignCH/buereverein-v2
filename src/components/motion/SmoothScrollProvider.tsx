@@ -3,7 +3,7 @@
 import { useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { useGSAP } from '@gsap/react'
-import { gsap, ScrollSmoother, ScrollTrigger, MOTION } from '@/lib/gsap'
+import { gsap, ScrollSmoother, ScrollTrigger, Observer, MOTION } from '@/lib/gsap'
 
 /* Created once in the root layout, survives route changes.
    Under reduced motion no smoother is created at all, the wrapper markup stays
@@ -18,7 +18,7 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
       /* Development only handle, so the scroll states can be driven and
          inspected from the console. Never present in a production build. */
       if (process.env.NODE_ENV === 'development') {
-        Object.assign(window, { __gsap: { gsap, ScrollTrigger, ScrollSmoother } })
+        Object.assign(window, { __gsap: { gsap, ScrollTrigger, ScrollSmoother, Observer } })
       }
 
       /* Development only: ?nosmooth skips the smoother so pin distances can be

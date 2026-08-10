@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useCallback, useRef, useState } from 'react'
 import { useGSAP } from '@gsap/react'
-import { gsap, ScrollSmoother, ScrollTrigger, EASE, MQ } from '@/lib/gsap'
+import { gsap, ScrollSmoother, ScrollTrigger, Observer, EASE, MQ } from '@/lib/gsap'
 import { NavArrow } from '@/components/ui/NavArrow'
 import { ProgressTrack } from '@/components/ui/ProgressTrack'
 import { ressortTrack } from '@/data/site'
@@ -49,20 +49,15 @@ export function RessortTrack({ ressorts }: { ressorts: Ressort[] }) {
   const root = useRef<HTMLElement>(null)
   const viewport = useRef<HTMLDivElement>(null)
   const strip = useRef<HTMLUListElement>(null)
-  const trigger = useRef<InstanceType<typeof ScrollTrigger> | null>(null)
   const [active, setActive] = useState(0)
 
-  const count = ressorts.length
+  /* Both branches fill this with their own way of reaching an entry. The
+     arrows and the progress dots call it and do not need to know which
+     mechanic is currently running. */
+  const gotoRef = useRef<((index: number) => void) | null>(null)
+  const jumpTo = useCallback((index: number) => gotoRef.current?.(index), [])
 
-  const jumpTo = useCallback((index: number) => {
-    const st = trigger.current
-    if (!st) return
-    const clamped = gsap.utils.clamp(0, count - 1, index)
-    const y = st.start + (st.end - st.start) * (clamped / (count - 1))
-    const smoother = ScrollSmoother.get()
-    if (smoother) smoother.scrollTo(y, true)
-    else gsap.to(window, { scrollTo: y, duration: 0.6, ease: EASE.inOut })
-  }, [count])
+  const count = ressorts.length
 
   useGSAP(
     () => {
@@ -94,96 +89,196 @@ export function RessortTrack({ ressorts }: { ressorts: Ressort[] }) {
           },
         })
 
-        trigger.current = tween.scrollTrigger ?? null
+        const st = tween.scrollTrigger
+        gotoRef.current = (index) => {
+          if (!st) return
+          const clamped = gsap.utils.clamp(0, count - 1, index)
+          const y = st.start + (st.end - st.start) * (clamped / (count - 1))
+          const smoother = ScrollSmoother.get()
+          if (smoother) smoother.scrollTo(y, true)
+          else gsap.to(window, { scrollTo: y, duration: 0.6, ease: EASE.inOut })
+        }
 
         return () => {
-          trigger.current = null
+          gotoRef.current = null
           tween.scrollTrigger?.kill()
           tween.kill()
         }
       })
 
-      /* Below 768px: a handover between exactly two cards. Only one card is
-         ever visible, the next one slides up over it and takes over fully.
-         No stack, no card showing underneath, no scale, no offset, no shadow.
+      /* Below 768px: discrete stepping through Observer, following the official
+         GreenSock pattern for switching sections.
 
-         Performance is the point here, so the whole branch is built around
-         three rules:
-           - at most two cards exist in the render tree, every other one is
-             display:none, not just transparent
-           - the only animated property is transform, written as translate3d so
-             the work stays on the compositor
-           - will-change sits on the two active cards and is taken off again as
-             soon as a card leaves the pair
-
-         The colour is not animated at all. Each card carries its fixed tone and
-         the change happens because a different card is now on top. */
+         The animation is no longer tied to the scroll position at all. That
+         coupling was the reason for the stutter: a scrubbed animation has to
+         follow the scroll offset, and during momentum scrolling a touch device
+         does not deliver that offset continuously, so the animation always ran
+         against the momentum. Here a gesture only decides a direction, and the
+         card change afterwards is an ordinary timeline with its own duration
+         that no longer cares about the finger. */
       mm.add(MQ.mobile, () => {
         const cards = gsap.utils.toArray<HTMLElement>(':scope > li', rail)
         if (cards.length < 2) return
-        const last = cards.length - 2
 
-        /* The incoming card paints above the current one through document
-           order alone, so no z-index has to be written or animated. */
-        let pair = -1
-        const showPair = (i: number) => {
-          if (pair === i) return
+        let current = 0
+        let animating = false
+        let observer: ReturnType<typeof Observer.create> | null = null
+        let gate: ReturnType<typeof ScrollTrigger.create> | null = null
+
+        /* Resting state: exactly one card in the render tree, everything else
+           display:none, and no will-change lingering on anything. */
+        const rest = (i: number) => {
           for (let k = 0; k < cards.length; k++) {
             const card = cards[k]!
-            const active = k === i || k === i + 1
-            card.style.display = active ? '' : 'none'
-            card.style.willChange = active ? 'transform' : ''
-          }
-          cards[i]!.style.transform = 'translate3d(0,0,0)'
-          pair = i
-        }
-
-        const proxy = { pos: 0 }
-        showPair(0)
-        cards[1]!.style.transform = 'translate3d(0,100%,0)'
-
-        const tween = gsap.to(proxy, {
-          pos: count - 1,
-          ease: EASE.scrub,
-          scrollTrigger: {
-            trigger: section,
-            start: 'top top',
-            end: () => `+=${(count - 1) * window.innerHeight * 0.7}`,
-            pin: true,
-            scrub: 1,
-            invalidateOnRefresh: true,
-            onUpdate: (self) => {
-              setActive(Math.round(self.progress * (count - 1)))
-            },
-          },
-          onUpdate: () => {
-            const pos = gsap.utils.clamp(0, count - 1, proxy.pos)
-            const i = Math.min(last, Math.floor(pos))
-            showPair(i)
-            /* Only the incoming card moves. The one below it stays at zero and
-               is written once per pair, not once per frame. */
-            cards[i + 1]!.style.transform = `translate3d(0,${(1 - (pos - i)) * 100}%,0)`
-          },
-        })
-
-        trigger.current = tween.scrollTrigger ?? null
-
-        return () => {
-          trigger.current = null
-          tween.scrollTrigger?.kill()
-          tween.kill()
-          for (const card of cards) {
-            card.style.display = ''
-            card.style.transform = ''
+            card.style.display = k === i ? '' : 'none'
             card.style.willChange = ''
           }
+          gsap.set(cards, { clearProps: 'transform,opacity' })
+        }
+        rest(0)
+
+        const goto = (index: number) => {
+          if (animating) return
+          const target = gsap.utils.clamp(0, cards.length - 1, index)
+          if (target === current) return
+
+          const direction = target > current ? 1 : -1
+          const from = cards[current]!
+          const to = cards[target]!
+
+          animating = true
+          setActive(target)
+
+          /* Only the two cards taking part exist while the timeline runs. */
+          to.style.display = ''
+          from.style.willChange = 'transform, opacity'
+          to.style.willChange = 'transform, opacity'
+
+          gsap
+            .timeline({
+              defaults: { duration: 0.7, ease: EASE.inOut, force3D: true },
+              onComplete: () => {
+                current = target
+                rest(target)
+                animating = false
+              },
+            })
+            .fromTo(to, { yPercent: 100 * direction, opacity: 1 }, { yPercent: 0 }, 0)
+            .fromTo(from, { yPercent: 0, opacity: 1 }, { yPercent: -30 * direction, opacity: 0 }, 0)
+        }
+
+        /* One place decides who owns the gestures, so enabling and releasing can
+           never drift apart. No shadow flag for it: the observer already knows
+           whether it is enabled, and a second copy of that truth drifts.
+
+           The smoother is deliberately not switched off. ScrollSmoother in GSAP
+           3.15 has no paused() at all, and it is not needed here: smoothTouch is
+           false, so there is no smoothing on touch to begin with, and while the
+           observer holds preventDefault no new scroll input arrives anyway. */
+        /* Taking over means the section stops moving, so it has to be in the
+           right place first. A real swipe always overshoots the exact top by a
+           hundred pixels or more, and since the observer then swallows all
+           further input, that offset would simply stay. One pixel past the
+           start on purpose: exactly on it ScrollTrigger reports isActive as
+           false, which would switch the observer straight back off.
+           The target comes from the trigger, not from the rectangle, because
+           the rectangle lags behind the smoother while a scroll is running. */
+        const snapToStart = () => {
+          if (!gate) return
+          const y = gate.start + 1
+          const smoother = ScrollSmoother.get()
+          if (smoother) smoother.scrollTo(y, true)
+          else gsap.to(window, { scrollTo: y, duration: 0.4, ease: EASE.inOut })
+        }
+
+        const own = (next: boolean) => {
+          if (!observer || observer.isEnabled === next) return
+          if (next) {
+            /* Without this the browser starts its own scroll gesture before
+               JavaScript ever sees touchmove, and preventDefault comes too late.
+               It is set together with the observer and taken off together with
+               it, never as a static rule: while the observer is off, the page
+               has to be able to scroll past this section normally, and a
+               permanent touch-action none would trap the reader here. */
+            section.style.touchAction = 'none'
+            observer.enable()
+            snapToStart()
+          } else {
+            observer.disable()
+            section.style.touchAction = ''
+          }
+        }
+
+        /* Handing the section back: from here on the page scrolls normally
+           again. It takes a further gesture in the same direction, so leaving
+           is deliberate and never happens by accident mid run. */
+        const release = () => own(false)
+
+        observer = Observer.create({
+          target: section,
+          type: 'wheel,touch,pointer',
+          preventDefault: true,
+          tolerance: 10,
+          onUp: () => {
+            if (animating) return
+            if (current === cards.length - 1) release()
+            else goto(current + 1)
+          },
+          onDown: () => {
+            if (animating) return
+            if (current === 0) release()
+            else goto(current - 1)
+          },
+        })
+        observer.disable()
+
+        /* The observer only owns the gestures while the section occupies the
+           viewport, and the trigger's own state is what decides that.
+
+           An earlier version measured the section's rectangle instead. That was
+           wrong twice over: ScrollTrigger switches on the scroll offset while
+           ScrollSmoother moves the content by transform with a lag, so at the
+           moment the toggle fired the rectangle still reported the full
+           distance away. And any real swipe overshoots the exact top by a
+           hundred pixels or more, so a tight tolerance can never be met. The
+           result was a gate that fired correctly and an activation that threw
+           the result away, which is why only the buttons worked. */
+        gate = ScrollTrigger.create({
+          trigger: section,
+          start: 'top top',
+          end: 'bottom top',
+          onToggle: (self) => own(self.isActive),
+        })
+
+        /* One exception where geometry is the better signal: when the scroll
+           position sits exactly on the start, ScrollTrigger reports isActive as
+           false. That happens when the section is already in place on load, and
+           only then, with no scrolling under way, is the rectangle reliable. */
+        own(gate.isActive === true || Math.abs(section.getBoundingClientRect().top) <= 2)
+
+        gotoRef.current = goto
+
+        return () => {
+          gotoRef.current = null
+          own(false)
+          /* own() only clears this when it was the one that set it, so the
+             cleanup repeats it: crossing the breakpoint must never leave the
+             desktop branch with a section that swallows touch. */
+          section.style.touchAction = ''
+          observer?.kill()
+          gate?.kill()
+          for (const card of cards) {
+            card.style.display = ''
+            card.style.willChange = ''
+          }
+          gsap.set(cards, { clearProps: 'transform,opacity' })
         }
       })
 
       mm.add(MQ.reduced, () => {
-        /* No pin, no stacking. The eight surfaces stand underneath each other
+        /* No observer, no pin. The eight surfaces stand underneath each other
            as ordinary cards, controls and progress line disappear. */
-        trigger.current = null
+        gotoRef.current = null
       })
 
       return () => mm.revert()
@@ -191,13 +286,24 @@ export function RessortTrack({ ressorts }: { ressorts: Ressort[] }) {
     { scope: root, dependencies: [count] },
   )
 
+  /* Under 768px the section itself fills the viewport, so the observer can take
+     over the gestures without a pin and without any scroll distance. From 768px
+     nothing changes: the stage keeps its own height and the section flows. */
   return (
-    <section ref={root} aria-labelledby="ressorts-titel" className="pt-[var(--section-gap)]">
-      <h2 id="ressorts-titel" className="display-l px-[var(--inset)] pb-[var(--gutter)]">
+    <section
+      ref={root}
+      aria-labelledby="ressorts-titel"
+      className="pt-[var(--section-gap)]
+                 motion-safe:max-md:flex motion-safe:max-md:h-svh motion-safe:max-md:flex-col
+                 motion-safe:max-md:overflow-hidden motion-safe:max-md:pt-[var(--header-h)] motion-safe:max-md:pb-[var(--inset)]"
+    >
+      <h2 id="ressorts-titel" className="display-l px-[var(--inset)] pb-[var(--gutter)] motion-safe:max-md:shrink-0">
         {ressortTrack.headline}
       </h2>
 
-      <div className="grid gap-6 motion-safe:h-[calc(100svh-var(--header-h)-2*var(--inset))] motion-safe:grid-rows-[1fr_auto_auto]">
+      <div className="grid gap-6 motion-safe:grid-rows-[1fr_auto_auto]
+                      motion-safe:md:h-[calc(100svh-var(--header-h)-2*var(--inset))]
+                      motion-safe:max-md:min-h-0 motion-safe:max-md:flex-1">
         <div ref={viewport} className="overflow-hidden px-[var(--inset)]">
           {/* The base layout is the reduced motion one: a plain vertical list.
               motion-safe then switches to the mobile stack, and motion-safe:md
