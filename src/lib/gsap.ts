@@ -23,10 +23,6 @@ export const STAG = { tight: 0.06, base: 0.08, loose: 0.1 } as const
 /* Travel distances in percent of the element's own size. */
 export const SHIFT = { line: 115, word: 110, tile: 40 } as const
 
-/* Tolerance for setting video.currentTime, in seconds. Below this no seek is
-   issued, otherwise the scrub floods the decoder. */
-export const SEEK_EPSILON = 1 / 48
-
 export const MOTION = '(prefers-reduced-motion: no-preference)'
 export const REDUCED = '(prefers-reduced-motion: reduce)'
 

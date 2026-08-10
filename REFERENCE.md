@@ -59,7 +59,7 @@ Abschnitt 4 definiert und gilt dort, nicht im Screenshot.
 - Die Wellness-Tech-Bildwelt: Mond, Wolken, schlafende Person. Das ist die
   Bildwelt des Konzepts, nicht unsere.
 - Die Micro-Widgets im Hero (Karten mit Fortschrittspunkten und Prozentwerten).
-  Der Hero trägt hier über Video und Typografie.
+  Der Hero trägt hier über Bild und Typografie.
 - Englische, verkaufende Tonalität. Der Verein spricht Deutsch, sachlich,
   ohne Werbeversprechen.
 - Die Farbwelt der Referenz (Grau-Blau, Altrosa). Es gelten ausschliesslich
@@ -79,18 +79,22 @@ Die folgende Beschreibung ist die Mechanik dieses Prototyps und ersetzt jede
 frühere Angabe.
 
 **Referenz:** `hero_and_topnav.png`
-**Inhalt:** `hero_video_scrub.mp4`, Vereinsname als Display-Zeile, ein Satz
-Subline, maximal zwei Aktionen.
+**Inhalt:** das statische Bild `/public/images/hero.jpg`, Vereinsname als
+Display-Zeile, ein Satz Subline, maximal zwei Aktionen.
+
+**Am 10.08.2026 auf Kundenwunsch geändert: das Scrub-Video ist ersetzt durch ein
+statisches Bild.** Video, Scrub-Mechanik, Pin und die zugehörige Scrolldistanz
+entfallen ersatzlos, ebenso der frühere Mobil-Sonderfall. Die Komposition,
+sämtliche Texte und der Masken-Reveal bleiben unverändert.
 
 **Aufbau:**
 - Navigation oben auf `paper`, ausserhalb der Fläche und ausserhalb des
   Smoother-Wrappers.
 - Darunter das Hero als eingerückte Fläche mit `--radius`, Rand `--inset` auch
-  unten. Video als Hintergrund, `object-fit: cover`.
-- Über dem Video ein **flächiger Abdunkler in `ink` mit 39 % Deckkraft**, kein
-  Verlauf. Der Wert ist gemessen, nicht geschätzt: das Video führt in jedem
-  waagrechten Band gleichzeitig nahezu weisse und nahezu schwarze Flächen, ohne
-  Abdunkler liegt `paper` bei 1.11:1. Bei 39 % erreicht die Displayzeile 3.02:1.
+  unten. Das Bild als Hintergrund über `next/image` mit `fill` und `priority`,
+  `object-fit: cover`, `object-position: var(--hero-focus)` mit `50% 6%`.
+- Über dem Bild ein **flächiger Abdunkler in `ink`**, kein Verlauf, Deckkraft
+  `--scrim`. Siehe den Kontrastbefund weiter unten.
 - Inhaltsraster in drei Zeilen `1fr / auto / 1.15fr`. Der Textblock sitzt in der
   mittleren Zeile, zentriert: Headline, Subline, zwei Pills.
 - Headline in **zwei von Hand gesetzten Zeilen**, nicht automatisch umbrochen.
@@ -99,45 +103,53 @@ Subline, maximal zwei Aktionen.
 - Die untere Zeile bleibt leer. Die Statistik-Karten des Referenzbildes werden
   nicht übernommen. Bewusste Setzung.
 
-**Bewegung, Reihenfolge der Teilanimationen:**
+**Bewegung:**
 
-1. **Beim Laden, ohne Scroll:** die beiden Headline-Zeilen fahren maskiert von
-   unten ein, `yPercent: 115 → 0`, Dauer `DUR.base`, Stagger `STAG.base`,
-   `EASE.out`. Kein Scrub. Subline und Pills werden nicht animiert.
-2. **Beim Scrollen:** ein einziger `ScrollTrigger` auf der Hero-Sektion,
-   `start: 'top top'`, `end: '+=100%'`, `pin: true`, `pinSpacing: true`,
-   `scrub: true`, `invalidateOnRefresh: true`.
-3. Dieser Trigger fährt ein Proxy-Objekt `{ time: 0 }` von 0 auf
-   `duration - 0.05`, `ease: 'none'`.
-4. **`video.currentTime` wird nicht im `onUpdate` des Tweens gesetzt**, sondern
-   in einer eigenen `requestAnimationFrame`-Schleife, die den Proxy ausliest.
-   Sie setzt nur, wenn `readyState >= 2`, nicht `seeking`, `seekable.length > 0`
-   und die Abweichung grösser als `1/48` Sekunde ist. Grund: ein Tick, der
-   feuert bevor die Datei seekbar ist, geht sonst dauerhaft verloren, weil ein
-   fertig gescrubbter Tween nicht mehr tickt. Das war im Prototyp der einzige
-   Fehler, der das Scrubbing vollständig lahmlegte.
-5. Beim Verlassen des Pins kein Sprung, kein Fade der ganzen Sektion.
+- **Beim Laden, ohne Scroll:** die beiden Headline-Zeilen fahren maskiert von
+  unten ein, `yPercent: 115 → 0`, Dauer `DUR.base`, Stagger `STAG.base`,
+  `EASE.out`. Kein Scrub. Subline und Pills werden nicht animiert.
+- **Sonst nichts.** Kein Pin, kein Scrub, kein `ScrollTrigger` auf dieser
+  Sektion, keine eigene Scrolldistanz. Das Hero scrollt wie jede andere Sektion.
+  Die Sektion braucht deshalb kein Client-Bundle, die einzige Bewegung liegt in
+  `MaskedHeading`.
+- Es gibt **keinen Mobil-Sonderfall mehr**. Das Verhalten ist auf allen Breiten
+  identisch, es hängt nur noch an `prefers-reduced-motion`.
 
-**Unter 768px, ergänzt am 10.08.2026:**
+**Kontrast, gemessen am 10.08.2026 an den tatsächlichen Textpositionen für
+375, 768 und 1440:**
 
-- **Kein Pin, kein Scrub.** Die Sektion scrollt normal weiter.
-- **Das Video wird gar nicht geladen.** Das `src`-Attribut steht nicht im
-  Markup, es wird ausschliesslich im Desktop-Zweig gesetzt. Unterhalb von 768px
-  bekommt das Element also nie eine Quelle und der Browser fordert die 15.75 MB
-  nie an. Grund: das Scrubben von `currentTime` ist auf Touch nicht flüssig zu
-  bekommen und kollidiert mit dem nativen Scroll, es gäbe auf dem Handy also
-  nichts, wofür das Video da wäre.
-- **Das Poster ist der statische Hintergrund**, mit derselben Typografie
-  darüber. Der Abdunkler bleibt bei 39 %.
-- **Der Masken-Reveal der Headline läuft unverändert**, gleiche Zeilen, gleicher
-  Stagger, gleiche Dauer. Er hängt nicht am Breakpoint, sondern nur an
-  `prefers-reduced-motion`.
-- Beim Zurückwechseln über 768px wird das `src` wieder entfernt, damit auf einem
-  schmalen Viewport kein dekodiertes Video im Speicher liegen bleibt.
+Das Bild führt hinter dem zentrierten Text den vollen Umfang von nahezu schwarz
+bis nahezu weiss. Median der Luminanz 0.06 bis 0.24, 99. Perzentil bis 0.87.
+Die hellen Stellen sind der weisse Kirchturm, helle Fassaden und die
+Spiegelungen im Wasser.
 
-**Reduced Motion:** dasselbe wie unter 768px. Kein Video, kein Pin, kein Scrub,
-kein Smoother. Das Poster steht, die Headline-Zeilen stehen sofort auf
-Endposition.
+| Abdunkler | Headline, Ziel 3.0:1 | Subline, Ziel 4.5:1 | Bildhelligkeit |
+|---|---|---|---|
+| 39 % | 1.81 nein | 2.16 nein | 2.44x |
+| **58 %** | **2.5 bis 3.1, knapp darunter** | **3.0 bis 3.2, darunter** | **1.68x** |
+| 70 % | 3.38 ja | 3.97 nein | 1.20x |
+| 75 % | 3.93 ja | 4.59 ja | 1.00x |
+
+Gesetzt ist **`--scrim: 0.58`**, auf Kundenentscheid vom 10.08.2026: das Bild
+war zu dunkel und sollte um 60 bis 70 % aufgehellt werden. 0.58 lässt 42 %
+des Bildes durch statt 25 %, das ist Faktor 1.68, also plus 68 %.
+
+**Das ist ein bewusster Verstoss gegen die Kontrasttabelle in DESIGN.md 2.**
+Gemessen an den echten Textpositionen erreicht die Headline je nach Breite 2.53
+bis 3.11:1 statt 3.0, die Subline 3.00 bis 3.19:1 statt 4.5. Betroffen ist
+jeweils das oberste Prozent der Fläche hinter dem Text, also die Stellen, an
+denen ein Buchstabe auf dem weissen Kirchturm oder einer hellen Fassade liegt.
+Im Median liegen beide Zeilen bei 8:1 bis 14:1, der überwiegende Teil des Textes
+ist also klar lesbar.
+
+**Der Bildausschnitt ist kein Hebel.** Nachgemessen über jede `object-position`
+von 0 bis 100 %: die nötige Deckkraft fällt nie unter 63 % für die Headline und
+73 % für die Subline. Das Bild hat keine ruhige dunkle Zone, die hellen Flächen
+ziehen sich durch die ganze Bildhöhe. Der frühere Vorschlag, über den Ausschnitt
+zu gehen, ist damit erledigt.
+
+**Reduced Motion:** kein Masken-Reveal, die Headline-Zeilen stehen sofort auf
+Endposition. Sonst identisch, es gibt nichts weiter abzuschalten.
 
 ### 4.2 Übergang Hero zu Folgesektion
 **Referenz:** `herotonextsectionanimation.png`
@@ -306,7 +318,7 @@ funktionieren, Bild ist optional.
 
 ## 5. Harte Regeln
 
-- **Bildbudget: das Hero-Video, das Gruppenbild und 7 Portraits.** Sonst keine
+- **Bildbudget: das Hero-Bild, das Gruppenbild und 7 Portraits.** Sonst keine
   Fotografie auf der gesamten Website. Kein Stock, keine generierten Bilder,
   keine Platzhalterbilder. Keine Sektion darf so entworfen sein, dass sie ohne
   Foto leer wirkt.
@@ -358,14 +370,20 @@ Am fertigen Ergebnis prüfbar. Jedes "nein" ist ein Fehler, kein Geschmack.
 ## 7. Offene Entscheidungen
 
 - [x] Grundton der Seite: **reines Weiss**, `--color-paper`
-- [x] Kontrast der Hero-Headline über dem Video: gemessen, flächiger
-      `ink`-Abdunkler mit **39 %**. Siehe 4.1.
+- [x] Kontrast der Hero-Headline über dem Bild: gemessen, flächiger
+      `ink`-Abdunkler. Siehe 4.1.
 - [x] Reihenfolge der 8 Ressorts: Quellreihenfolge aus `ressorts.txt`. Sie
       bedeutet inhaltlich nichts, deshalb **keine Nummerierung**.
-- [ ] **Subline über dem Video.** Bei 39 % erreicht `body-l` nur rund 2.5:1 und
-      verfehlt die geforderten 4.5:1. Entweder Abdunkler auf 52 %, oder die
-      Subline verlässt das Video. Bis zum Entscheid steht 39 % und der Mangel
-      ist bekannt.
+- [ ] **Der Hero-Abdunkler steht auf 58 % und hält die Kontrastregel nicht.**
+      Entschieden am 10.08.2026 zugunsten der Bildhelligkeit. Headline 2.5 bis
+      3.1:1 statt 3.0, Subline 3.0 bis 3.2:1 statt 4.5. Betroffen ist das
+      oberste Prozent der Fläche hinter dem Text, im Median liegen beide Zeilen
+      bei 8:1 bis 14:1. Wer beides will, Helligkeit und Regel, hat noch zwei
+      Wege, der Bildausschnitt gehört nicht mehr dazu:
+      1. **Text weg aus der Bildmitte**, wie in Variante C des Prototyp-Gates.
+         Das ändert die Komposition A.
+      2. **Anderes Bild.** Ein Motiv mit ruhiger, dunkler Mitte trägt zentrierten
+         Text in `paper` ohne nennenswerten Abdunkler.
 - [ ] **Count-up der Jahreszahl.** 4.3 verlangt, dass alle drei Zahlen
       hochzählen. Bei **1953** liest sich das wie eine Stoppuhr, nicht wie ein
       Gründungsjahr. Umgesetzt ist die Vorgabe. Falls das nicht gewollt ist,

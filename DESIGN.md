@@ -116,7 +116,7 @@ einen Stelle".
 --inset:         clamp(12px, 2vw, 32px);  /* Rand um eingerückte Flächen */
 --gutter:        clamp(16px, 4vw, 64px);  /* Innenabstand */
 --section-gap:   clamp(64px, 10vh, 160px);
---scrim:         0.39;  /* ink-Abdunkler über dem Hero-Video, gemessen */
+--scrim:         0.58;  /* ink-Abdunkler über dem Hero-Bild, Kundenentscheid */
 --track-card:    clamp(280px, 62vw, 720px);  /* Kachelbreite der Ressort-Spur */
 ```
 
@@ -148,9 +148,6 @@ export const STAG  = { tight: 0.06, base: 0.08, loose: 0.1 } as const
 // übernommen, damit dieselben Zahlen nicht zweimal im Code stehen.
 export const SHIFT = { line: 115, word: 110, tile: 40 } as const
 
-// Toleranz beim Setzen von video.currentTime, in Sekunden. Unterhalb davon
-// wird nicht gesucht, sonst flutet der Scrub den Decoder mit Seeks.
-export const SEEK_EPSILON = 1 / 48
 ```
 
 `SHIFT.line` gilt für den zeilenweisen Masken-Reveal, `SHIFT.word` für den
@@ -215,44 +212,39 @@ Setup und muss von Anfang an sitzen.
 - Bei `prefers-reduced-motion: reduce` wird **kein** Smoother erzeugt. Die
   Wrapper-Struktur bleibt im DOM, der native Scroll übernimmt.
 
-### Hero-Scroll-Scrub
+### Hero-Bild
 
-Quelle: `/public/video/hero_video_scrub.mp4`, bereits mit GOP-Länge 1 encodiert.
-**Nicht neu encodieren.**
+Quelle: `/public/images/hero.jpg`, aufbereitet aus `content/bilder/hero-poster.jpg`.
+1664 x 1248, also 4:3.
+
+**Am 10.08.2026 auf Kundenwunsch:** das frühere Scrub-Video ist ersatzlos
+entfernt, samt Pin, Scrolldistanz, Ladezuständen und Mobil-Sonderfall.
+`hero_video_scrub.mp4` liegt nicht mehr unter `/public`.
 
 ```tsx
-<video
-  ref={videoRef}
-  src="/video/hero_video_scrub.mp4"
-  muted
-  playsInline
-  preload="auto"
-  poster="/images/hero-poster.jpg"
-  aria-hidden="true"
+<Image
+  src="/images/hero.jpg"
+  alt="Die Altstadt von Büren an der Aare mit Kirchturm und gedeckter Holzbrücke, gespiegelt im Wasser"
+  fill
+  priority
+  sizes="100vw"
+  className="hero-media"
 />
 ```
 
 Mechanik:
 
-- Sektion gepinnt, `start: 'top top'`, `end: '+=100%'`, `pinSpacing: true`,
-  `scrub: true`, `invalidateOnRefresh: true`.
-- Der Scrub fährt ein Proxy-Objekt `{ time: 0 }` von 0 auf `duration - 0.05`,
-  `ease: 'none'`.
-- **`video.currentTime` wird nicht im `onUpdate` des Tweens gesetzt.** Das
-  Setzen läuft in einer eigenen `requestAnimationFrame`-Schleife, die den Proxy
-  ausliest und nur zugreift, wenn `readyState >= 2`, nicht `seeking`,
-  `seekable.length > 0` und die Abweichung grösser als `SEEK_EPSILON` ist.
-  Grund: ein Tick, der feuert bevor die Datei seekbar ist, geht sonst dauerhaft
-  verloren, weil ein fertig gescrubbter Tween nicht mehr tickt.
-- Erst starten, wenn `loadedmetadata` gefeuert hat und `video.duration` eine
-  endliche Zahl ist. Vorher zeigt das Poster.
-- Der Entwicklungsserver muss Range-Requests beantworten. Ohne sie meldet der
-  Browser das Video als nicht seekbar und der Scrub tut still nichts. Next.js
-  beantwortet Ranges von selbst.
-- Bei `prefers-reduced-motion: reduce` wird kein Video geladen. Es erscheint
-  das Poster, statisch, mit derselben Typografie darüber.
-- Fällt das Video aus, bleibt das Poster stehen. Die Sektion darf in keinem Fall
-  leer sein.
+- **Keine.** Das Hero hat keinen `ScrollTrigger`, keinen Pin, keinen Scrub und
+  keine eigene Scrolldistanz. Es scrollt wie jede andere Sektion.
+- `priority` sorgt dafür, dass das Bild nicht nachlädt. Es ist das einzige Bild
+  über der Falz.
+- Die einzige Bewegung ist der Masken-Reveal der Headline-Zeilen beim Laden, und
+  die liegt in `MaskedHeading`. Die Hero-Komponente selbst braucht deshalb kein
+  Client-Bundle.
+- Bei `prefers-reduced-motion: reduce` entfällt der Reveal, sonst ändert sich
+  nichts. Es gibt nichts weiter abzuschalten.
+- `.hero-media` trägt nur noch den Beschnitt, `object-fit` und
+  `object-position`. Position und Grösse liefert `next/image` mit `fill`.
 
 **Platzierung nach `reference/hero_and_topnav.png`:**
 
@@ -262,23 +254,22 @@ Mechanik:
   Die Höhe der Leiste ist die feste Grösse, das Logo richtet sich danach:
   52px Logo neben 72px Leiste, 42px neben 64px. Das Bild trägt rundum 15px
   transparenten Rand, sichtbar sind davon rund 92 Prozent.
-- Darunter das Hero als eingerückte Fläche mit `--radius`, Video als
+- Darunter das Hero als eingerückte Fläche mit `--radius`, das Bild als
   Hintergrund, `object-fit: cover`.
-- **`object-position: var(--hero-focus)`, gesetzt auf `50% 6%`.** Das Video ist
+- **`object-position: var(--hero-focus)`, gesetzt auf `50% 6%`.** Das Bild ist
   4:3, die Hero-Fläche deutlich breiter als hoch, `cover` schneidet also immer
   Höhe weg. Zentriert fallen je nach Fenster 12 bis 18 Prozent oben weg, genau
   dort steht der Kirchturm: gemessen liegt der oberste Nicht-Himmel-Pixel bei
-  3.0 bis 5.1 Prozent der Bildhöhe, die durchgehende Dachlinie bei 22 bis 28.
+  3.0 Prozent der Bildhöhe, die durchgehende Dachlinie bei 22 Prozent.
   Bei 6 Prozent bleibt der Beschnitt oben über alle Fensterbreiten unter
   2.5 Prozent, der Turm bleibt stehen, der Rest geht unten ab, dort ist Wasser.
-- Poster und Video teilen sich denselben Anker über `.hero-media`. Liefen sie
-  auseinander, würde das Bild springen, sobald das Video das Poster ablöst.
-- Über dem Video ein flächiger Abdunkler in `ink` mit **`--scrim: 0.39`**, kein
-  Verlauf. Der Wert steht fest, er ist am Video gemessen. Siehe REFERENCE.md 4.1.
+- Über dem Bild ein flächiger Abdunkler in `ink` mit **`--scrim: 0.58`**, kein
+  Verlauf. Kundenentscheid zugunsten der Bildhelligkeit. Der Wert hält die
+  Kontrastregeln **nicht**, siehe REFERENCE.md 4.1 und den offenen Punkt in 7.
 - Headline zentriert, **zwei von Hand gesetzte Zeilen**, `display-xl`, in
   `paper`. Kein automatischer Umbruch, jede Zeile in einer eigenen Maske.
-- Darunter die Subline in `body-l`. Sie erreicht über dem Abdunkler nur rund
-  2.5:1 und ist damit die offene Stelle aus REFERENCE.md 7.
+- Darunter die Subline in `body-l`. Sie erreicht bei 58 % Abdunkler 3.0 bis
+  3.2:1 und verfehlt die geforderten 4.5:1, siehe REFERENCE.md 4.1.
 - Darunter zwei Aktionen als Pills.
 - **Die Statistik-Karten aus dem Referenzbild werden nicht übernommen.**
   Der untere Bereich des Heros bleibt leer. Das ist eine bewusste Setzung.
@@ -289,7 +280,8 @@ Mehr gibt es nicht:
 
 1. **Masken-Reveal** von Text, zeilen- oder wortweise über SplitText. Nie
    buchstabenweise, nie mitten im Wort geschnitten.
-2. **Pin plus Scrub** für Hero, Sektionsübergang, Ressort-Spur.
+2. **Pin plus Scrub** für den Sektionsübergang und die Ressort-Spur.
+   Das Hero hat seit dem 10.08.2026 weder Pin noch Scrub.
 3. **Horizontale Spur** in gepinnter Sektion, mit Fortschrittslinie.
 4. **Gestaffelter Eintritt** von Rasterelementen.
 5. **Count-up** von Zahlen, einmalig beim ersten Eintritt.
@@ -336,10 +328,10 @@ Liste, kein Bild. Bewegung nur Masken-Reveal der Kopfzeile.
 
 ## 8. Offene Punkte
 
-- [x] Kontrast Headline über dem Hero-Video: gemessen, `--scrim: 0.39`
+- [x] Kontrast Headline über dem Hero-Bild: gemessen, `--scrim: 0.58`
 - [x] Reihenfolge der 8 Ressorts: Quellreihenfolge, ohne Bedeutung, ohne
       Nummerierung
-- [ ] Subline über dem Video erreicht nur rund 2.5:1, siehe REFERENCE.md 7
+- [ ] Hero-Abdunkler auf 58 %, Kontrastregel dafür verfehlt, siehe REFERENCE.md 7
 - [ ] Zahlungsanbieter: Stripe oder Payrexx
 - [ ] `Flyer.thumbnail` ist jetzt optional. Flyer ohne Vorschaubild erscheinen
       als rein typografische Kachel im selben Raster.
