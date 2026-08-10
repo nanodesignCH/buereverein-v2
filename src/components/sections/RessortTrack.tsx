@@ -103,19 +103,48 @@ export function RessortTrack({ ressorts }: { ressorts: Ressort[] }) {
         }
       })
 
-      /* Below 768px: the same eight surfaces, stacked instead of side by side.
-         Each card rises from below over its predecessor and locks in place.
-         The card underneath shrinks a little and moves up into --stack-peek, so
-         the stack reads as a stack rather than as a single card. */
+      /* Below 768px: a handover between exactly two cards. Only one card is
+         ever visible, the next one slides up over it and takes over fully.
+         No stack, no card showing underneath, no scale, no offset, no shadow.
+
+         Performance is the point here, so the whole branch is built around
+         three rules:
+           - at most two cards exist in the render tree, every other one is
+             display:none, not just transparent
+           - the only animated property is transform, written as translate3d so
+             the work stays on the compositor
+           - will-change sits on the two active cards and is taken off again as
+             soon as a card leaves the pair
+
+         The colour is not animated at all. Each card carries its fixed tone and
+         the change happens because a different card is now on top. */
       mm.add(MQ.mobile, () => {
         const cards = gsap.utils.toArray<HTMLElement>(':scope > li', rail)
         if (cards.length < 2) return
+        const last = cards.length - 2
 
-        gsap.set(cards, { zIndex: (i: number) => i })
-        gsap.set(cards.slice(1), { yPercent: 100 })
+        /* The incoming card paints above the current one through document
+           order alone, so no z-index has to be written or animated. */
+        let pair = -1
+        const showPair = (i: number) => {
+          if (pair === i) return
+          for (let k = 0; k < cards.length; k++) {
+            const card = cards[k]!
+            const active = k === i || k === i + 1
+            card.style.display = active ? '' : 'none'
+            card.style.willChange = active ? 'transform' : ''
+          }
+          cards[i]!.style.transform = 'translate3d(0,0,0)'
+          pair = i
+        }
 
-        const tl = gsap.timeline({
-          defaults: { ease: EASE.scrub, duration: 1 },
+        const proxy = { pos: 0 }
+        showPair(0)
+        cards[1]!.style.transform = 'translate3d(0,100%,0)'
+
+        const tween = gsap.to(proxy, {
+          pos: count - 1,
+          ease: EASE.scrub,
           scrollTrigger: {
             trigger: section,
             start: 'top top',
@@ -127,22 +156,27 @@ export function RessortTrack({ ressorts }: { ressorts: Ressort[] }) {
               setActive(Math.round(self.progress * (count - 1)))
             },
           },
+          onUpdate: () => {
+            const pos = gsap.utils.clamp(0, count - 1, proxy.pos)
+            const i = Math.min(last, Math.floor(pos))
+            showPair(i)
+            /* Only the incoming card moves. The one below it stays at zero and
+               is written once per pair, not once per frame. */
+            cards[i + 1]!.style.transform = `translate3d(0,${(1 - (pos - i)) * 100}%,0)`
+          },
         })
 
-        for (let i = 0; i < count - 1; i++) {
-          /* The outgoing card settles back, the incoming one comes up. Both run
-             over the same unit, so a card is never in mid air on its own. */
-          tl.to(cards[i]!, { scale: 0.94, yPercent: -6 }, i)
-          tl.to(cards[i + 1]!, { yPercent: 0 }, i)
-        }
-
-        trigger.current = tl.scrollTrigger ?? null
+        trigger.current = tween.scrollTrigger ?? null
 
         return () => {
           trigger.current = null
-          tl.scrollTrigger?.kill()
-          tl.kill()
-          gsap.set(cards, { clearProps: 'transform,zIndex' })
+          tween.scrollTrigger?.kill()
+          tween.kill()
+          for (const card of cards) {
+            card.style.display = ''
+            card.style.transform = ''
+            card.style.willChange = ''
+          }
         }
       })
 
@@ -181,7 +215,7 @@ export function RessortTrack({ ressorts }: { ressorts: Ressort[] }) {
                 <li
                   key={ressort.slug}
                   className="w-full
-                             motion-safe:absolute motion-safe:inset-x-0 motion-safe:bottom-0 motion-safe:top-[var(--stack-peek)]
+                             motion-safe:absolute motion-safe:inset-0
                              motion-safe:md:static motion-safe:md:inset-auto motion-safe:md:w-[var(--track-card)] motion-safe:md:shrink-0"
                 >
                   <Link
