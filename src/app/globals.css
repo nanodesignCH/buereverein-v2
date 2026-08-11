@@ -39,23 +39,22 @@
     --header-h: 72px;
 
     /* Flat ink scrim over the hero image, no gradient.
-       Set to 0.58 on 10.08.2026 by client decision: the picture had to be
-       brightened by 60 to 70 percent. 0.58 lets 42 percent of the image
-       through instead of 25, so it renders 1.68 times as bright.
+       Set to 0.50 on 11.08.2026 by client decision: brighten by a further
+       20 percent. 0.50 lets half the image through instead of 42 percent,
+       which is a factor of 1.19.
 
-       This is a deliberate trade against the contrast table in DESIGN.md 2.
-       Measured at the real text positions for 375, 768 and 1440, the picture
-       runs from near black to near white behind the centred text: median
-       luminance 0.06 to 0.24, 99th percentile 0.87, which is the white church
-       tower and the bright facades. Holding 3:1 for the headline would need
-       70 percent, 4.5:1 for the subline 75 percent. At 0.58 the headline
-       reaches about 2.7:1 and the subline about 3.2:1.
+       Remeasured at the real text rectangles for 375, 768 and 1440, taken from
+       the live DOM and mapped through the cover crop onto the source pixels.
+       At the 99th percentile of the area behind the text, so the brightest
+       spot any letter actually sits on, which is the white church tower:
+       headline 4.17 to 4.45:1 against a target of 3.0, subline 4.60 to 4.76:1
+       against 4.5. In the median both lines sit between 11 and 17:1.
 
-       The crop is not a lever here: measured across every object-position from
-       0 to 100 percent, the requirement never drops below 63 percent for the
-       headline and 73 for the subline, because the bright areas run through the
-       whole height of the image. See the open point in REFERENCE.md 7. */
-    --scrim: 0.58;
+       Both rules in DESIGN.md 2 hold, but the subline has almost no margin
+       left. It crosses 4.5:1 at about 0.49, so 0.50 is the floor: any further
+       brightening breaks the rule and needs a different picture or the text
+       out of the middle, see REFERENCE.md 4.1. */
+    --scrim: 0.5;
     --track-card: clamp(280px, 62vw, 720px);
 
     /* Crop anchor for the hero image. The source is 4:3 and the hero surface is

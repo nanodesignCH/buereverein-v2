@@ -263,13 +263,15 @@ Mechanik:
   3.0 Prozent der Bildhöhe, die durchgehende Dachlinie bei 22 Prozent.
   Bei 6 Prozent bleibt der Beschnitt oben über alle Fensterbreiten unter
   2.5 Prozent, der Turm bleibt stehen, der Rest geht unten ab, dort ist Wasser.
-- Über dem Bild ein flächiger Abdunkler in `ink` mit **`--scrim: 0.58`**, kein
-  Verlauf. Kundenentscheid zugunsten der Bildhelligkeit. Der Wert hält die
-  Kontrastregeln **nicht**, siehe REFERENCE.md 4.1 und den offenen Punkt in 7.
+- Über dem Bild ein flächiger Abdunkler in `ink` mit **`--scrim: 0.50`**, kein
+  Verlauf. Kundenentscheid vom 11.08.2026 zugunsten der Bildhelligkeit. Der Wert
+  hält die Kontrastregeln, siehe REFERENCE.md 4.1.
 - Headline zentriert, **zwei von Hand gesetzte Zeilen**, `display-xl`, in
   `paper`. Kein automatischer Umbruch, jede Zeile in einer eigenen Maske.
-- Darunter die Subline in `body-l`. Sie erreicht bei 58 % Abdunkler 3.0 bis
-  3.2:1 und verfehlt die geforderten 4.5:1, siehe REFERENCE.md 4.1.
+  Sie erreicht 4.17 bis 4.45:1 gegen geforderte 3.0.
+- Darunter die Subline in `body-l`. Sie erreicht 4.60 bis 4.76:1 gegen
+  geforderte 4.5, hat damit aber fast keine Reserve. **0.50 ist der Boden**,
+  siehe REFERENCE.md 4.1.
 - Darunter zwei Aktionen als Pills.
 - **Die Statistik-Karten aus dem Referenzbild werden nicht übernommen.**
   Der untere Bereich des Heros bleibt leer. Das ist eine bewusste Setzung.
@@ -328,10 +330,12 @@ Liste, kein Bild. Bewegung nur Masken-Reveal der Kopfzeile.
 
 ## 8. Offene Punkte
 
-- [x] Kontrast Headline über dem Hero-Bild: gemessen, `--scrim: 0.58`
+- [x] Kontrast Headline über dem Hero-Bild: gemessen, `--scrim: 0.50`
 - [x] Reihenfolge der 8 Ressorts: Quellreihenfolge, ohne Bedeutung, ohne
       Nummerierung
-- [ ] Hero-Abdunkler auf 58 %, Kontrastregel dafür verfehlt, siehe REFERENCE.md 7
+- [x] Hero-Abdunkler auf 50 %, Kontrastregeln eingehalten. Die Messung vom
+      10.08.2026, die einen Verstoss auswies, war ein Rechenfehler, siehe
+      REFERENCE.md 4.1
 - [ ] Zahlungsanbieter: Stripe oder Payrexx
 - [ ] `Flyer.thumbnail` ist jetzt optional. Flyer ohne Vorschaubild erscheinen
       als rein typografische Kachel im selben Raster.

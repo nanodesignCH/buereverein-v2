@@ -115,38 +115,55 @@ sämtliche Texte und der Masken-Reveal bleiben unverändert.
 - Es gibt **keinen Mobil-Sonderfall mehr**. Das Verhalten ist auf allen Breiten
   identisch, es hängt nur noch an `prefers-reduced-motion`.
 
-**Kontrast, gemessen am 10.08.2026 an den tatsächlichen Textpositionen für
-375, 768 und 1440:**
+**Kontrast, neu gemessen am 11.08.2026. Die Messung vom 10.08.2026 war falsch,
+siehe die Korrektur am Ende dieses Abschnitts.**
 
 Das Bild führt hinter dem zentrierten Text den vollen Umfang von nahezu schwarz
-bis nahezu weiss. Median der Luminanz 0.06 bis 0.24, 99. Perzentil bis 0.87.
-Die hellen Stellen sind der weisse Kirchturm, helle Fassaden und die
+bis nahezu weiss. Median der Rohluminanz 0.04 bis 0.10, 99. Perzentil 0.82 bis
+0.93. Die hellen Stellen sind der weisse Kirchturm, helle Fassaden und die
 Spiegelungen im Wasser.
 
-| Abdunkler | Headline, Ziel 3.0:1 | Subline, Ziel 4.5:1 | Bildhelligkeit |
+Gemessen an den echten Textrechtecken für 375, 768 und 1440, aus dem laufenden
+DOM geholt und über den `cover`-Beschnitt auf die Quellpixel abgebildet.
+Angegeben ist der Wert am **99. Perzentil** der Fläche hinter dem Text, also an
+der hellsten Stelle, auf der überhaupt ein Buchstabe liegt. Der Median steht in
+Klammern.
+
+| Abdunkler | Durchlass | Headline, Ziel 3.0:1 | Subline, Ziel 4.5:1 |
 |---|---|---|---|
-| 39 % | 1.81 nein | 2.16 nein | 2.44x |
-| **58 %** | **2.5 bis 3.1, knapp darunter** | **3.0 bis 3.2, darunter** | **1.68x** |
-| 70 % | 3.38 ja | 3.97 nein | 1.20x |
-| 75 % | 3.93 ja | 4.59 ja | 1.00x |
+| 39 % | 61 % | 2.92 bis 3.13 (12 bis 16) | 3.25 bis 3.38 (9 bis 15) |
+| 48 % | 52 % | 3.92 bis 4.18 (13 bis 17) | 4.31 bis 4.47 (11 bis 16) |
+| **50 %** | **50 %** | **4.17 bis 4.45 (14 bis 17)** | **4.60 bis 4.76 (11 bis 17)** |
+| 58 % | 42 % | 5.58 bis 5.90 (15 bis 18) | 6.09 bis 6.27 (13 bis 18) |
+| 70 % | 30 % | 8.83 bis 9.21 | 9.43 bis 9.63 |
 
-Gesetzt ist **`--scrim: 0.58`**, auf Kundenentscheid vom 10.08.2026: das Bild
-war zu dunkel und sollte um 60 bis 70 % aufgehellt werden. 0.58 lässt 42 %
-des Bildes durch statt 25 %, das ist Faktor 1.68, also plus 68 %.
+Gesetzt ist **`--scrim: 0.50`**, auf Kundenentscheid vom 11.08.2026: das Bild
+sollte um weitere 20 % aufgehellt werden. 0.50 lässt die Hälfte des Bildes durch
+statt 42 %, das ist Faktor 1.19.
 
-**Das ist ein bewusster Verstoss gegen die Kontrasttabelle in DESIGN.md 2.**
-Gemessen an den echten Textpositionen erreicht die Headline je nach Breite 2.53
-bis 3.11:1 statt 3.0, die Subline 3.00 bis 3.19:1 statt 4.5. Betroffen ist
-jeweils das oberste Prozent der Fläche hinter dem Text, also die Stellen, an
-denen ein Buchstabe auf dem weissen Kirchturm oder einer hellen Fassade liegt.
-Im Median liegen beide Zeilen bei 8:1 bis 14:1, der überwiegende Teil des Textes
-ist also klar lesbar.
+**Beide Regeln aus DESIGN.md 2 sind damit eingehalten**, die Subline aber nur
+knapp. Sie unterschreitet 4.5:1 bei rund 49 % Deckkraft. **0.50 ist also der
+Boden**, weiter aufhellen bricht die Regel. Wer noch mehr Helligkeit will,
+braucht einen der beiden Wege aus Abschnitt 7: Text weg aus der Bildmitte oder
+ein anderes Motiv.
+
+**Korrektur der Messung vom 10.08.2026.** Die alte Tabelle nannte für 58 %
+eine Headline von 2.5 bis 3.1:1 und eine Subline von 3.0 bis 3.2:1 und
+begründete damit einen bewussten Regelverstoss. Diese Zahlen sind falsch. Der
+Abdunkler wurde dort auf die **Luminanz** multipliziert. Ein `div` in `ink` mit
+`opacity` liegt aber im sRGB-Raum über dem Bild, der Browser rechnet also
+`Kanal × (1 - Deckkraft)` auf den nicht linearen Werten und erst danach die
+Luminanz. Weil die Gamma-Kurve steil ist, dunkelt das viel stärker ab: der Faktor
+auf der Luminanz ist rund `(1 - Deckkraft)^2.4`, nicht `(1 - Deckkraft)`.
+Zur Probe von Hand: `ink` bei 58 % über einem reinen weissen Pixel ergibt
+`#6b6b6b`, und `paper` darauf liegt bei 5.25:1, nicht bei 2.5:1.
+Das alte Modell lässt sich mit den alten Zahlen exakt nachrechnen, es ist also
+ein Rechenfehler und keine andere Messstelle.
 
 **Der Bildausschnitt ist kein Hebel.** Nachgemessen über jede `object-position`
-von 0 bis 100 %: die nötige Deckkraft fällt nie unter 63 % für die Headline und
-73 % für die Subline. Das Bild hat keine ruhige dunkle Zone, die hellen Flächen
+von 0 bis 100 %: das Bild hat keine ruhige dunkle Zone, die hellen Flächen
 ziehen sich durch die ganze Bildhöhe. Der frühere Vorschlag, über den Ausschnitt
-zu gehen, ist damit erledigt.
+zu gehen, bleibt erledigt.
 
 **Reduced Motion:** kein Masken-Reveal, die Headline-Zeilen stehen sofort auf
 Endposition. Sonst identisch, es gibt nichts weiter abzuschalten.
@@ -224,57 +241,118 @@ Die Wechselmechanik der Textkarte gilt **nicht** mehr.
 
 **Bewegung:**
 - Ein einziger `ScrollTrigger` auf der Sektion, `start: 'top top'`,
-  `end: '+=' + distance()`, `pin: true`, `scrub: 1`,
-  `invalidateOnRefresh: true`.
-- `distance()` ist `strip.scrollWidth - viewport.clientWidth`, als Funktion
-  ausgewertet, damit Breitenwechsel beim Refresh neu greifen.
-- Ein Tween: `gsap.to(strip, { x: () => -distance(), ease: 'none' })`.
-  Die Scrolldistanz entspricht damit exakt der horizontalen Strecke, das Band
-  läuft ohne Stauchung.
+  `end: '+=' + distanz()`, `pin: true`, `invalidateOnRefresh: true`.
+- `bandDistanz()` ist `strip.scrollWidth - strip.clientWidth`, als Funktion
+  ausgewertet, damit Breitenwechsel beim Refresh neu greifen. `distanz()` ist
+  `bandDistanz() + 80vh`, die 80vh gehören der Grid-Auflösung weiter unten.
+- **Gemessen wird gegen die Inhaltsbreite des Bandes, nicht gegen die Bühne.**
+  Die Bühne trägt `--inset` als Polster auf beiden Seiten. Zieht man ihre
+  `clientWidth` ab, bleibt das Band zwei Inset-Breiten zu früh stehen und die
+  letzte Kachel ist beim Start der Auflösung rechts angeschnitten. Gegen
+  `strip.clientWidth` kommt sie mit genau dem Rand zur Ruhe, mit dem die erste
+  gestartet ist.
+- **Scroll-Pixel zu Band-Pixel bleibt eins zu eins**, das Band läuft ohne
+  Stauchung. Weil die Bandstrecke nur noch den vorderen Teil der Pin-Distanz
+  ausmacht, wird `x` im `onUpdate` selbst gesetzt statt über ein `scrub` auf
+  einem Tween.
+- **Das Nachziehen ist `gsap.quickTo` mit Dauer 1 und `ease: 'expo'`.** Das ist
+  nicht die Ease der scroll-gekoppelten Bewegung, die bleibt linear, sondern die
+  des Aufholens, und es ist genau die Ease, die ScrollTrigger für `scrub: 1`
+  intern verwendet. Mit linearem Aufholen holt ein neu gestarteter
+  Ein-Sekunden-Tween pro Bild nur rund zwei Prozent der Reststrecke auf, das
+  Band hängt dann sichtbar hinter dem Finger.
 - Kein Ein- und Ausblenden einzelner Einträge, kein Stagger, keine Maske.
   Die Bewegung ist eine einzige durchgehende Translation.
-- Aktiver Index aus `Math.round(progress * (n - 1))`, gesetzt im `onUpdate`.
+- Aktiver Index aus `Math.round(bandFortschritt * (n - 1))`, gesetzt im
+  `onUpdate`. Der Bandfortschritt ist der zurückgelegte Anteil der
+  Bandstrecke, nicht der Anteil der gesamten Scrolldistanz. Die
+  Grid-Auflösung hängt hinten dran und darf den Index nicht verschieben.
 - Vor- und Zurück-Steuerung sowie die Punkte springen über ScrollSmoother
   beziehungsweise ScrollToPlugin an die Scrollposition des Ziel-Index.
 
-**Unter 768px, ergänzt am 10.08.2026: gestapelte Karten statt Band.**
+**Ab 768px, ergänzt am 11.08.2026: Grid-Auflösung nach der letzten Kachel.**
 
-Die horizontale Spur wird auf schmalen Viewports durch eine vertikale Stapel-
-Mechanik ersetzt. Inhalt, Farben und Anatomie der Karte bleiben identisch, nur
-die Bewegung ist eine andere.
+Nach „Kurse und Anlässe" folgt ein Abschlusszustand, in dem alle acht Ressorts
+gleichzeitig sichtbar sind. Das Verhalten bis zur letzten Kachel bleibt
+unverändert.
 
-- **Sektion gepinnt, der Viewport steht still.** Die acht Karten liegen
-  gestapelt übereinander, `z-index` in Lesereihenfolge.
-- **Beim Scrollen schiebt sich die nächste Karte von unten über die vorige**,
-  `yPercent: 100 → 0`, und rastet ein.
-- **Die darunterliegende Karte bleibt angedeutet sichtbar:** sie geht auf
-  `scale: 0.94` und `yPercent: -6` und steigt damit in den Freiraum
-  `--stack-peek` (44px) am oberen Rand der Bühne. Ohne diesen Freiraum würde
-  die ankommende Karte ihre Vorgängerin randlos verdecken und der Stapel wäre
-  als Stapel nicht mehr lesbar.
-- **`scrub: 1`, `ease: 'none'`.** Kein Ease auf einem Scrub.
-- **Scrolldistanz 70vh pro Karte**, also `(n - 1) × 0.7 × Viewporthöhe`.
-- Aus- und Einlaufen einer Karte teilen sich dieselbe Zeiteinheit, eine Karte
-  hängt also nie allein in der Luft.
-- **Fortschrittslinie, Punkte und Vor-Zurück-Steuerung bleiben unverändert**,
-  inklusive Ring auf dem aktiven Punkt. Sie greifen auf denselben Trigger zu wie
-  auf dem Desktop.
-- **Die Farbzyklierung bleibt**, jetzt pro Karte im Stapel statt pro Karte im
-  Band. Weiterhin wird keine Farbe interpoliert.
+- **Die Sektion bleibt für den Übergang gepinnt**, zusätzliche Scrolldistanz
+  80vh. Es bleibt bei **einem** ScrollTrigger auf der Sektion, die Auflösung
+  hängt am selben Trigger.
+- Alle acht Kacheln fahren **von links ausserhalb des Viewports** auf ihre
+  Zielposition im Grid, gestaffelt mit `STAG.tight`, `EASE.out`.
+- Sie **verkleinern sich dabei auf Gridgrösse**. Animiert werden ausschliesslich
+  `x` und `scale`, dazu die Deckkraft des Bandes. **Keine Layout-Eigenschaft**,
+  das Grid selbst steht als statisches CSS.
+- **Kein Scrub.** Stagger und Ease sind Timeline-Eigenschaften, und DESIGN.md 5
+  verbietet eine Ease auf einem Scrub. Die Timeline läuft, sobald das Band durch
+  ist, und läuft rückwärts, sobald zurückgescrollt wird. Das ist die saubere
+  Umkehr, ohne einen zweiten Trigger.
+- Raster: **4 Spalten mal 2 Reihen ab 1024px, 2 mal 4 zwischen 768 und 1024px.**
+  Abstand zwischen den Kacheln `--inset`, seitlicher Rand ebenfalls `--inset`.
+  Oben und unten schliesst das Grid bündig ab, es besetzt also genau die Fläche,
+  die das Band besetzt hat.
+- Jede Kachel behält ihren Vereinston aus der Zyklierung, es entsteht ein
+  Farbraster. Weiterhin wird keine Farbe interpoliert.
+- Jede Kachel bleibt der Link auf ihre Ressort-Detailseite.
+- **Fortschrittslinie und Vor-Zurück-Steuerung werden ausgeblendet.** Sie
+  behalten ihren Platz und gehen auf `visibility: hidden`, damit die Bühne unter
+  einem laufenden Pin nicht die Höhe wechselt.
+- Danach gibt die Sektion den Pin frei, die Seite scrollt normal weiter.
+
+**Unter 768px, geändert am 11.08.2026: vier Kacheln pro Ansicht.**
+
+Die Einzelkarten-Mechanik entfällt. Statt acht Zuständen gibt es zwei.
+
+- Kacheln so verkleinert, dass **vier gleichzeitig in den Viewport passen**,
+  2 Spalten mal 2 Reihen.
+- **Rundum `--inset`, entschieden am 11.08.2026.** Der Rand auf allen vier
+  Seiten und der Abstand zwischen den Kacheln tragen denselben Wert, das Viererfeld
+  sitzt damit gleichmässig in der Bühne. Die Kacheln bleiben im Hochformat und
+  alle vier gleich gross, sie werden nicht auf Quadrate gezwungen: quadratische
+  Kacheln und ein rundum gleicher Rand schliessen sich auf einem Hochkant-Display
+  geometrisch aus.
+- **Zwei Ansichten:** Ressort 1 bis 4, dann 5 bis 8.
+- Eine Scroll-Geste wechselt zur nächsten Ansicht. Weiterhin `Observer` mit
+  discrete stepping und `animating`-Sperre, **genau eine Animation pro Geste**.
+  Die Animation hängt nicht an der Scrollposition, siehe die Begründung im
+  Component.
+- Übergang: die vier alten Kacheln nach oben raus und `opacity: 0`, die vier
+  neuen von unten rein. Gestaffelt mit `STAG.tight`, Dauer 0.7. Der Weg ist die
+  **Bühnenhöhe in Pixeln**, nicht `yPercent`: eine Kachel ist ein Viertel der
+  Bühne, `yPercent: 100` würde sie nur eine Reihe tiefer setzen statt hinaus.
+- **Die Fortschrittslinie zeigt 2 Punkte**, nicht 8. Die Steuerung schaltet
+  Ansichten, nicht Ressorts, und heisst entsprechend.
+- Nach der zweiten Ansicht gibt die Sektion frei, natives Scrollen läuft weiter.
+- **Keine Grid-Auflösung auf Mobil.** Dort ist bereits ein Grid sichtbar.
+- Die Farbzyklierung bleibt, jetzt über die acht Kacheln der beiden Ansichten.
+
+**Kachelinhalt im verkleinerten Zustand, beide Zweige: Titel und Link.**
+Der Vorschautext entfällt. Er wird **nicht verkleinert**: die Typo-Skala hat
+unterhalb von `display-m` keine Stufe, und eine zu erfinden bricht DESIGN.md 3.
+Der Titel steht in `display-m` und wird getrennt, sonst ist „Geschichten" bei
+375px breiter als die Kachel. Das Dokument ist `de-CH`, der Browser trennt an
+den richtigen Stellen.
 
 **Breakpoint und Übergabe:** die beiden Zweige laufen über `gsap.matchMedia()`
 mit `(min-width: 768px)` und `(max-width: 767.98px)`, jeweils kombiniert mit
 `(prefers-reduced-motion: no-preference)`. Die Queries lassen weder Lücke noch
 Überlappung, bei genau 768px greift der Desktop-Zweig. Nachgemessen bei 767,
 768, 1000 und beim Wechsel in beide Richtungen ohne Neuladen: nie mehr als **ein
-ScrollTrigger pro Sektion**. Beim Verlassen des Mobil-Zweigs werden die
-Stapel-Transformationen über `clearProps` zurückgenommen.
+ScrollTrigger pro Sektion**. Beim Verlassen eines Zweigs werden die
+Transformationen über `clearProps` zurückgenommen.
 
-**Reduced Motion:** kein Pin, keine Stapelung, kein Scrub. Die acht Flächen
-stehen als gewöhnliche Karten untereinander, Steuerung und Fortschrittslinie
-entfallen, alles ist vollständig sichtbar. Das ist zugleich das Grundlayout im
-Markup, die beiden Bewegungsvarianten werden erst über `motion-safe`
-darübergelegt.
+**Drei Layouts, immer nur eines sichtbar.** Die vertikale Liste ist das Markup
+selbst, `motion-safe:md` macht daraus das Band, `motion-safe` unter 768px nimmt
+sie heraus. Band und Kacheln tragen dieselben acht Links, deshalb ist die Ebene,
+die gerade nicht spielt, entweder per `display: none` aus dem Dokument oder per
+`inert` aus dem Accessibility-Baum genommen. Ein Titel erscheint nie doppelt.
+
+**Reduced Motion:** kein Pin, keine Ansichten, keine Auflösung, kein Scrub. Die
+acht Flächen stehen als gewöhnliche Karten untereinander, mit Vorschautext,
+Steuerung und Fortschrittslinie entfallen, alles ist vollständig sichtbar. Das
+ist zugleich das Grundlayout im Markup, die beiden Bewegungsvarianten werden
+erst über `motion-safe` darübergelegt.
 
 ### 4.5 Vorstand
 **Referenz:** `grid_start.png` als Rasterlogik
@@ -374,12 +452,15 @@ Am fertigen Ergebnis prüfbar. Jedes "nein" ist ein Fehler, kein Geschmack.
       `ink`-Abdunkler. Siehe 4.1.
 - [x] Reihenfolge der 8 Ressorts: Quellreihenfolge aus `ressorts.txt`. Sie
       bedeutet inhaltlich nichts, deshalb **keine Nummerierung**.
-- [ ] **Der Hero-Abdunkler steht auf 58 % und hält die Kontrastregel nicht.**
-      Entschieden am 10.08.2026 zugunsten der Bildhelligkeit. Headline 2.5 bis
-      3.1:1 statt 3.0, Subline 3.0 bis 3.2:1 statt 4.5. Betroffen ist das
-      oberste Prozent der Fläche hinter dem Text, im Median liegen beide Zeilen
-      bei 8:1 bis 14:1. Wer beides will, Helligkeit und Regel, hat noch zwei
-      Wege, der Bildausschnitt gehört nicht mehr dazu:
+- [x] **Der Hero-Abdunkler steht auf 50 % und hält die Kontrastregel.**
+      Am 11.08.2026 neu gemessen: die Zahlen vom 10.08.2026 beruhten auf einem
+      Rechenfehler, der Abdunkler wurde auf die Luminanz statt auf die
+      sRGB-Kanäle multipliziert. Es gab nie einen Regelverstoss. Headline 4.17
+      bis 4.45:1 gegen 3.0, Subline 4.60 bis 4.76:1 gegen 4.5, jeweils am
+      99. Perzentil. Siehe 4.1.
+- [ ] **Die Subline hat bei 50 % fast keine Reserve mehr.** Sie unterschreitet
+      4.5:1 bei rund 49 % Deckkraft. Wird noch mehr Helligkeit verlangt, bleiben
+      zwei Wege, der Bildausschnitt gehört nicht dazu:
       1. **Text weg aus der Bildmitte**, wie in Variante C des Prototyp-Gates.
          Das ändert die Komposition A.
       2. **Anderes Bild.** Ein Motiv mit ruhiger, dunkler Mitte trägt zentrierten
