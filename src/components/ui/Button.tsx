@@ -6,8 +6,11 @@ import Link from 'next/link'
 type Props = {
   href: string
   children: React.ReactNode
-  variant?: 'solid' | 'outline'
+  variant?: 'solid' | 'outline' | 'brick'
   className?: string
+  target?: string
+  rel?: string
+  'aria-label'?: string
 }
 
 const base =
@@ -25,11 +28,29 @@ const variants = {
     'hover:bg-[var(--color-ink)] hover:text-[var(--color-paper)] ' +
     '[.on-dark_&]:border-[var(--color-paper)] [.on-dark_&]:text-[var(--color-paper)] ' +
     '[.on-dark_&]:hover:bg-[var(--color-paper)] [.on-dark_&]:hover:text-[var(--color-ink)]',
+  // Filled in brick, text in paper per DESIGN.md 2. Hover inverts like solid.
+  brick:
+    'border-[var(--color-brick)] bg-[var(--color-brick)] text-[var(--color-paper)] ' +
+    'hover:bg-[var(--color-paper)] hover:text-[var(--color-brick)]',
 } as const
 
-export function Button({ href, children, variant = 'solid', className = '' }: Props) {
+export function Button({
+  href,
+  children,
+  variant = 'solid',
+  className = '',
+  target,
+  rel,
+  'aria-label': ariaLabel,
+}: Props) {
   return (
-    <Link href={href} className={`${base} ${variants[variant]} ${className}`}>
+    <Link
+      href={href}
+      className={`${base} ${variants[variant]} ${className}`}
+      target={target}
+      rel={rel}
+      aria-label={ariaLabel}
+    >
       {children}
     </Link>
   )

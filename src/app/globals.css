@@ -22,6 +22,18 @@
   --text-body: 1rem;
   --text-caption: 0.8125rem;
 
+  /* Fluid counterparts of body and caption, for text that sits inside a tile
+     rather than in the page flow. Added on 11.08.2026, see DESIGN.md 3.
+
+     A tile grows with the viewport while a fixed size does not, so on a 16 inch
+     display in full screen the same sentence sits in a box half again as wide
+     and reads as too small. Both curves are pinned to their fixed counterpart
+     at 1024px, which is where the portrait tiles are at their narrowest and no
+     text may grow, and reach their maximum at 1728px, the full screen width of
+     that display. Below 1024 they stay flat, so 375 and 768 are untouched. */
+  --text-body-fluid: clamp(1rem, 0.4546rem + 0.8523vw, 1.375rem);
+  --text-caption-fluid: clamp(0.8125rem, 0.4489rem + 0.5682vw, 1.0625rem);
+
   --radius-surface: 24px;
   --radius-pill: 999px;
 }
@@ -172,6 +184,66 @@
   .hero-media {
     object-fit: cover;
     object-position: var(--hero-focus);
+  }
+
+  /* Motivation overlay on the committee portraits, REFERENCE.md 4.5.
+
+     Only opacity moves, never display and never visibility: both would drop the
+     text out of the accessibility tree, and the text has to stay reachable for a
+     screen reader without the pointer or the keyboard ever touching the tile.
+     The overlay is a sibling of the picture inside the tile, so it inherits the
+     tile's bounds and is clipped by the tile's radius. It never touches height
+     or border-radius, which is what the tile expansion animates, so the two
+     cannot collide.
+
+     The threshold is 768px in both directions and the two ranges are disjoint,
+     so a tap state left over from a narrow window cannot leak into the hover
+     range and no tile can be shown by two rules at once. */
+
+  .portrait-overlay {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease-out;
+  }
+
+  /* Keyboard focus reveals the overlay at every width. :focus-visible rather
+     than :focus, otherwise the tap that closes a tile would leave focus behind
+     on the button and the overlay would stay standing.
+
+     A sibling combinator rather than :has() on the tile. Both work, this one
+     needs no :has() at all and stays a plain sibling match. It requires the
+     button to stand before the overlay in the markup, which also lays the
+     overlay over the button; that costs nothing, because the overlay never
+     takes pointer events and the button underneath keeps every click. */
+  .portrait-schalter:focus-visible ~ .portrait-overlay {
+    opacity: 1;
+  }
+
+  @media (min-width: 768px) {
+    .portrait-kachel:hover .portrait-overlay {
+      opacity: 1;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .portrait-kachel[data-offen='true'] .portrait-overlay {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .portrait-overlay {
+      transition: none;
+    }
+  }
+
+  /* The tile clips at its radius, so the focus ring has to sit inside the edge
+     instead of outside it, where it would be cut in half. */
+  .portrait-schalter:focus-visible {
+    outline-offset: -6px;
+    border-radius: var(--radius-surface);
   }
 
   /* Masked line reveal. The clip box is opened upwards by the amount the

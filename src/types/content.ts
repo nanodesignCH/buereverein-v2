@@ -38,3 +38,16 @@ export type Ressort = {
   titel: string
   teaser: string
 }
+
+/* The committee stays static too. It changes once a year at the general
+   meeting, which is not a reason for a collection. */
+export type Vorstandsmitglied = {
+  slug: string
+  name: string
+  funktion: string
+  portrait: ImageRef
+  /* The "Motivation" paragraph from the content source, shown as the overlay on
+     the portrait tile. See REFERENCE.md 4.5 for the character limit the tile
+     imposes. Not optional: a tile without it would open an empty overlay. */
+  motivation: string
+}

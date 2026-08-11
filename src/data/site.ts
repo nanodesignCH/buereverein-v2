@@ -55,6 +55,61 @@ export const eventsPreview = {
   headline: 'Sei Teil des Anlasses, wir freuen uns auf dich',
 } as const
 
+/* /verein. Every sentence is verein.txt verbatim, checked against the content
+   source, which agrees. Three corrections and nothing else: the missing space
+   in "ehem.Frauenverein", the typewriter apostrophe in 3'802 raised to the
+   typographic one, and the dash in the first paragraph, which stays a hyphen
+   with spaces as CLAUDE.md 5 allows.
+
+   The headings are the words verein.txt uses for its own blocks. The page head
+   is the navigation label, because "Begegnungen am Puls der Zeit", the opening
+   line of verein.txt, already carries the intro on the start page and a
+   heading cannot stand twice on one site. */
+export const verein = {
+  /* Hand set lines for the masked reveal, one mask per line. */
+  kopf: ['Verein'],
+
+  geschichte: {
+    headline: 'Geschichte',
+    absaetze: [
+      'Der Gemeinnützige Frauenverein Büren an der Aare wurde 1953 von engagierten und innovativen Frauen gegründet und ist aus dem Stedtli heute nicht mehr wegzudenken. Rund 310 Mitglieder engagieren sich aktiv oder passiv im Verein - bei einer Einwohnerzahl von 3’802 Personen (Stand 01.03.2026).',
+      'Im Jahr 2026 startet der Verein mit neuem Namen und neuem Erscheinungsbild in die Zukunft. Dabei bleiben unsere Werte dieselben: Menschen zusammenbringen, lokale Projekte unterstützen und das Miteinander stärken.',
+      'Mit finanziellen Beiträgen fördern wir ortsansässige Vereine, die Schule, den Kindergarten, die Spielgruppe, Kitas sowie weitere gemeinnützige Institutionen. Zu den bedeutenden Projekten der vergangenen Jahre gehören die Skulptur an der Ländti im Rahmen des Skulpturensymposiums 2021 sowie die Erneuerung des Spielplatzes beim Schulhaus.',
+      'Finanziert werden diese Beiträge hauptsächlich durch den Erlös der Brockenstube. Seit über 40 Jahren wird die Brockenstube vom BÜREVEREIN (ehem. Frauenverein) geführt. Sie ist nicht nur ein Ort, an dem gut erhaltene Gegenstände ein neues Zuhause finden, sondern auch ein beliebter Treffpunkt für Gespräche und gemütliches Beisammensein.',
+    ],
+  },
+
+  vorstand: {
+    headline: 'Vorstand',
+    /* The two colour tiles of REFERENCE.md 4.5. Both lines are verein.txt and
+       were picked by the client on 11.08.2026, because the file offers exactly
+       two kinds of standalone short lines and neither was an obvious fit.
+
+       "Miteinander" is the first entry of the list the source marks as "USP".
+       The line is the part of the second paragraph that follows the colon, word
+       for word. It also stands in the running history text above, so on the
+       page it reads as a quotation from the association's own words. */
+    kachelLabel: 'Miteinander',
+    kachelZeile:
+      'Menschen zusammenbringen, lokale Projekte unterstützen und das Miteinander stärken.',
+  },
+
+  hauptversammlung: {
+    headline: 'Hauptversammlung',
+    absaetze: [
+      'Die Hauptversammlung findet jedes Jahr im ersten Semester statt. Die Mitglieder werden rechtzeitig schriftlich dazu eingeladen.',
+      'An der Hauptversammlung informiert der Vorstand über die Aktivitäten und die Entwicklung des Vereins. Zudem werden wichtige Geschäfte behandelt und Beschlüsse gefasst. Die Mitglieder haben die Möglichkeit, ihre Anliegen einzubringen und aktiv an der Gestaltung des Vereins mitzuwirken.',
+    ],
+  },
+
+  statutenLabel: 'Statuten',
+} as const
+
+/* verein.txt asks for a Statuten button next to the membership one. The PDF now
+   lies in /public/pdf, so the button renders. Stays optional: once the document
+   comes from Payload, only this line changes. */
+export const statutenPdf: string | undefined = '/pdf/statuten-2026.pdf'
+
 export const kontaktCta = {
   // jetzt-dabei-sein.txt, line 1 and the first answer, verbatim
   headline: 'Allein ist man stark, gemeinsam unschlagbar',

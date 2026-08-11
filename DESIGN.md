@@ -92,7 +92,27 @@ einen Stelle".
 --text-body-l:     1.25rem;                        /* Hero-Subline, Lead */
 --text-body:       1rem;                           /* Fliesstext */
 --text-caption:    0.8125rem;                      /* Label, Meta */
+
+/* Fluide Gegenstücke, nur für Text INNERHALB einer Kachel.
+   Ergänzt am 11.08.2026. */
+--text-body-fluid:    clamp(1rem, 0.4546rem + 0.8523vw, 1.375rem);
+--text-caption-fluid: clamp(0.8125rem, 0.4489rem + 0.5682vw, 1.0625rem);
 ```
+
+**Die beiden fluiden Tokens sind keine neue Stufe der Skala.** Sie sind
+dieselbe Stufe, an die Kachelbreite gekoppelt. Eine Kachel wächst mit dem
+Viewport, eine feste Grösse nicht: auf einem 16-Zoll-Display im Vollbild steht
+derselbe Satz in einer anderthalbmal so breiten Fläche und wirkt zu klein.
+
+- Beide Kurven sind bei **1024px** auf ihren festen Wert festgenagelt. Dort
+  sind die Portraitkacheln am schmalsten, dort darf kein Text wachsen.
+- Beide erreichen ihr Maximum bei **1728px**, der Vollbildbreite dieses
+  Displays.
+- Unterhalb 1024px sind sie flach. 375px und 768px bleiben unverändert.
+
+**Nur in Kacheln einsetzen.** Fliesstext im Seitenfluss bleibt bei
+`--text-body`, Label bleiben bei `--text-caption`. Wer eine dritte fluide
+Grösse braucht, ändert vorher diesen Abschnitt.
 
 ### Regeln
 
@@ -116,8 +136,6 @@ einen Stelle".
 --inset:         clamp(12px, 2vw, 32px);  /* Rand um eingerückte Flächen */
 --gutter:        clamp(16px, 4vw, 64px);  /* Innenabstand */
 --section-gap:   clamp(64px, 10vh, 160px);
---scrim:         0.58;  /* ink-Abdunkler über dem Hero-Bild, Kundenentscheid */
---track-card:    clamp(280px, 62vw, 720px);  /* Kachelbreite der Ressort-Spur */
 ```
 
 **Eingerückte Flächen sind gesetzt.** Sektionen sitzen als Flächen mit
@@ -143,16 +161,7 @@ ScrollToPlugin und `@gsap/react`. Keine weitere Library.
 export const DUR   = { fast: 0.6, base: 0.9, slow: 1.2 } as const
 export const EASE  = { out: 'power3.out', inOut: 'power2.inOut', scrub: 'none' } as const
 export const STAG  = { tight: 0.06, base: 0.08, loose: 0.1 } as const
-
-// Verschiebungswege in Prozent der eigenen Elementhöhe. Aus dem Prototyp-Gate
-// übernommen, damit dieselben Zahlen nicht zweimal im Code stehen.
-export const SHIFT = { line: 115, word: 110, tile: 40 } as const
-
 ```
-
-`SHIFT.line` gilt für den zeilenweisen Masken-Reveal, `SHIFT.word` für den
-wortweisen auf einem Scrub, `SHIFT.tile` für den gestaffelten Eintritt von
-Rasterelementen. Andere Werte gibt es nicht.
 
 - Eintritts-Animationen: `EASE.out`, einmalig, `once: true`.
 - Scroll-gekoppelte Animationen: `scrub: 1`, `ease: 'none'`. Nie eine Ease auf
@@ -212,66 +221,45 @@ Setup und muss von Anfang an sitzen.
 - Bei `prefers-reduced-motion: reduce` wird **kein** Smoother erzeugt. Die
   Wrapper-Struktur bleibt im DOM, der native Scroll übernimmt.
 
-### Hero-Bild
+### Hero-Scroll-Scrub
 
-Quelle: `/public/images/hero.jpg`, aufbereitet aus `content/bilder/hero-poster.jpg`.
-1664 x 1248, also 4:3.
-
-**Am 10.08.2026 auf Kundenwunsch:** das frühere Scrub-Video ist ersatzlos
-entfernt, samt Pin, Scrolldistanz, Ladezuständen und Mobil-Sonderfall.
-`hero_video_scrub.mp4` liegt nicht mehr unter `/public`.
+Quelle: `/public/video/hero_video_scrub.mp4`, bereits mit GOP-Länge 1 encodiert.
+**Nicht neu encodieren.**
 
 ```tsx
-<Image
-  src="/images/hero.jpg"
-  alt="Die Altstadt von Büren an der Aare mit Kirchturm und gedeckter Holzbrücke, gespiegelt im Wasser"
-  fill
-  priority
-  sizes="100vw"
-  className="hero-media"
+<video
+  ref={videoRef}
+  src="/video/hero_video_scrub.mp4"
+  muted
+  playsInline
+  preload="auto"
+  poster="/images/hero-poster.jpg"
+  aria-hidden="true"
 />
 ```
 
 Mechanik:
 
-- **Keine.** Das Hero hat keinen `ScrollTrigger`, keinen Pin, keinen Scrub und
-  keine eigene Scrolldistanz. Es scrollt wie jede andere Sektion.
-- `priority` sorgt dafür, dass das Bild nicht nachlädt. Es ist das einzige Bild
-  über der Falz.
-- Die einzige Bewegung ist der Masken-Reveal der Headline-Zeilen beim Laden, und
-  die liegt in `MaskedHeading`. Die Hero-Komponente selbst braucht deshalb kein
-  Client-Bundle.
-- Bei `prefers-reduced-motion: reduce` entfällt der Reveal, sonst ändert sich
-  nichts. Es gibt nichts weiter abzuschalten.
-- `.hero-media` trägt nur noch den Beschnitt, `object-fit` und
-  `object-position`. Position und Grösse liefert `next/image` mit `fill`.
+- Sektion gepinnt, `start: 'top top'`, `end: '+=100%'`, `scrub: true`.
+- Der Scrub setzt `video.currentTime` über ein Proxy-Objekt, nicht direkt in
+  `onUpdate` ohne Interpolation.
+- Erst starten, wenn `loadedmetadata` gefeuert hat und `video.duration` eine
+  endliche Zahl ist. Vorher zeigt das Poster.
+- Bei `prefers-reduced-motion: reduce` wird kein Video geladen. Es erscheint
+  das Poster, statisch, mit derselben Typografie darüber.
+- Fällt das Video aus, bleibt das Poster stehen. Die Sektion darf in keinem Fall
+  leer sein.
 
 **Platzierung nach `reference/hero_and_topnav.png`:**
 
-- Navigation oben, ausserhalb der Fläche, auf `paper`. **Vereinslogo links**
-  (`/images/logo_buereverein.png`, gestapelte Lockup-Fassung), Links mittig,
-  eine hervorgehobene Aktion rechts als Pill in `ink`.
-  Die Höhe der Leiste ist die feste Grösse, das Logo richtet sich danach:
-  52px Logo neben 72px Leiste, 42px neben 64px. Das Bild trägt rundum 15px
-  transparenten Rand, sichtbar sind davon rund 92 Prozent.
-- Darunter das Hero als eingerückte Fläche mit `--radius`, das Bild als
+- Navigation oben, ausserhalb der Fläche, auf `paper`. Wortmarke links,
+  Links mittig, eine hervorgehobene Aktion rechts als Pill in `ink`.
+- Darunter das Hero als eingerückte Fläche mit `--radius`, Video als
   Hintergrund, `object-fit: cover`.
-- **`object-position: var(--hero-focus)`, gesetzt auf `50% 6%`.** Das Bild ist
-  4:3, die Hero-Fläche deutlich breiter als hoch, `cover` schneidet also immer
-  Höhe weg. Zentriert fallen je nach Fenster 12 bis 18 Prozent oben weg, genau
-  dort steht der Kirchturm: gemessen liegt der oberste Nicht-Himmel-Pixel bei
-  3.0 Prozent der Bildhöhe, die durchgehende Dachlinie bei 22 Prozent.
-  Bei 6 Prozent bleibt der Beschnitt oben über alle Fensterbreiten unter
-  2.5 Prozent, der Turm bleibt stehen, der Rest geht unten ab, dort ist Wasser.
-- Über dem Bild ein flächiger Abdunkler in `ink` mit **`--scrim: 0.50`**, kein
-  Verlauf. Kundenentscheid vom 11.08.2026 zugunsten der Bildhelligkeit. Der Wert
-  hält die Kontrastregeln, siehe REFERENCE.md 4.1.
-- Headline zentriert, **zwei von Hand gesetzte Zeilen**, `display-xl`, in
-  `paper`. Kein automatischer Umbruch, jede Zeile in einer eigenen Maske.
-  Sie erreicht 4.17 bis 4.45:1 gegen geforderte 3.0.
-- Darunter die Subline in `body-l`. Sie erreicht 4.60 bis 4.76:1 gegen
-  geforderte 4.5, hat damit aber fast keine Reserve. **0.50 ist der Boden**,
-  siehe REFERENCE.md 4.1.
+- Headline zentriert, zwei Zeilen, `display-xl`, in `ink` oder `paper` je
+  nach Videohelligkeit. Falls der Kontrast über dem Video nicht sicher trägt,
+  ein flächiger Abdunkler in `ink` mit reduzierter Deckkraft, kein Verlauf.
+- Darunter die Subline in `body-l`, maximal zwei Zeilen.
 - Darunter zwei Aktionen als Pills.
 - **Die Statistik-Karten aus dem Referenzbild werden nicht übernommen.**
   Der untere Bereich des Heros bleibt leer. Das ist eine bewusste Setzung.
@@ -282,12 +270,32 @@ Mehr gibt es nicht:
 
 1. **Masken-Reveal** von Text, zeilen- oder wortweise über SplitText. Nie
    buchstabenweise, nie mitten im Wort geschnitten.
-2. **Pin plus Scrub** für den Sektionsübergang und die Ressort-Spur.
-   Das Hero hat seit dem 10.08.2026 weder Pin noch Scrub.
+2. **Pin plus Scrub** für Hero, Sektionsübergang, Ressort-Spur.
 3. **Horizontale Spur** in gepinnter Sektion, mit Fortschrittslinie.
 4. **Gestaffelter Eintritt** von Rasterelementen.
-5. **Count-up** von Zahlen, einmalig beim ersten Eintritt.
-6. **Hover** auf Buttons und Links: Farbwechsel oder Umrissstärke, unter 200ms,
+5. **Kachel-Expansion** für Raster mit gemischten Kacheln. Die Kacheln starten
+   als flache Balken auf voller Zielbreite und wachsen **nach unten** auf ihre
+   endgültige Höhe. Kein Fade-up.
+   - **Die Oberkante bleibt fix, die Unterkante wandert nach unten.** Kein
+     symmetrisches Aufklappen aus der Mitte.
+   - Startzustand: Höhe etwa 15 Prozent der Zielhöhe, `border-radius` bei
+     `--radius-pill`. Zielzustand: volle Höhe, `border-radius: --radius`.
+   - Die Rasterzellen haben über `aspect-ratio` eine feste Höhe. Animiert wird
+     ein innen liegendes Element mit `align-self: start`, damit das Layout
+     nicht umbricht und benachbarte Kacheln nicht springen.
+   - Der Inhalt ist im wachsenden Bereich zentriert, `overflow: hidden`. Er
+     wandert dadurch mit der Unterkante nach unten. Er wird nicht skaliert und
+     nicht verzerrt.
+   - **Jede Kachel hat ihren eigenen ScrollTrigger**, `start: 'top bottom'`.
+     Die Kachel beginnt zu wachsen, sobald ihre Oberkante die Unterkante des
+     Viewports erreicht, also im Moment des Erscheinens. Der zeitliche Versatz
+     zwischen den Reihen entsteht dadurch von selbst, nicht über ein Delay.
+   - Innerhalb einer Reihe zusätzlich `Stagger` 0.06 nach Spaltenindex.
+   - Dauer 1.2, `EASE.out`, `once: true`. Der lange Weg der Unterkante trägt
+     die kurze Dauer nicht, er wirkt dann abgehackt.
+   - Ein Count-up läuft parallel zur Expansion, nicht danach.
+6. **Count-up** von Zahlen, einmalig beim ersten Eintritt.
+7. **Hover** auf Buttons und Links: Farbwechsel oder Umrissstärke, unter 200ms,
    nur CSS, kein GSAP.
 
 ---
@@ -314,12 +322,8 @@ Mehr wird nicht gebaut, ohne Rückfrage:
 | `/ressorts` | Ressort-Übersicht als typografisches Grid, kein Bild |
 | `/ressorts/[slug]` | 8 statische Detailseiten, Langtext aus `/content/texte` |
 | `/events` | Monatsraster plus Listenansicht, funktioniert ohne Bilder |
-| `/verein` | Geschichte, Vorstand, Zahlen |
-| `/mitglied-werden` | Mitgliedschaft, Beiträge, die 6 FAQ. Nav-Label "Jetzt anmelden" |
+| `/verein` | Geschichte, Vorstand mit 7 Portraits. Keine Zahlenkacheln, die stehen im Intro der Startseite |
 | `/kontakt` | Kontaktangaben, später Formular |
-
-Auf `/` stehen **kein Vorstand und keine Kontaktangaben**. Die Adresse und die
-beiden Social-Links stehen ausschliesslich im Footer.
 
 **Ressort-Detailseite**, da in REFERENCE.md noch nicht spezifiziert: Kopf mit
 `display-l` auf einer Vollfläche im zyklierenden Ressort-Ton, darunter Langtext
@@ -330,12 +334,6 @@ Liste, kein Bild. Bewegung nur Masken-Reveal der Kopfzeile.
 
 ## 8. Offene Punkte
 
-- [x] Kontrast Headline über dem Hero-Bild: gemessen, `--scrim: 0.50`
-- [x] Reihenfolge der 8 Ressorts: Quellreihenfolge, ohne Bedeutung, ohne
-      Nummerierung
-- [x] Hero-Abdunkler auf 50 %, Kontrastregeln eingehalten. Die Messung vom
-      10.08.2026, die einen Verstoss auswies, war ein Rechenfehler, siehe
-      REFERENCE.md 4.1
+- [ ] Kontrast Headline über dem Hero-Video prüfen, sobald das Video vorliegt
+- [ ] Reihenfolge der 8 Ressorts festlegen, falls sie inhaltlich etwas bedeutet
 - [ ] Zahlungsanbieter: Stripe oder Payrexx
-- [ ] `Flyer.thumbnail` ist jetzt optional. Flyer ohne Vorschaubild erscheinen
-      als rein typografische Kachel im selben Raster.
